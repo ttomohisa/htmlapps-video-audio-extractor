@@ -1,0 +1,26 @@
+{
+  "$schema": "./schemas/app-config.schema.json",
+  "name": "Video Audio Extractor",
+  "nameJa": "動画から音声抽出",
+  "slug": "video-audio-extractor",
+  "version": "1.0.0",
+  "description": "Extract one audio track from a video locally in the browser, unchanged or converted to M4A / MP3 / WAV.",
+  "descriptionJa": "動画から音声トラックを1つ選び、ブラウザ内で音声ファイルとして取り出すツールです。",
+  "defaultLanguage": "auto",
+  "repository": {
+    "owner": "ttomohisa",
+    "name": "htmlapps-video-audio-extractor"
+  },
+  "build": {
+    "output": "dist/index.html",
+    "blockRuntimeNetwork": true,
+    "selfExtract": {
+      "enabled": true,
+      "output": "dist/index.self-extract.html"
+    },
+    "sizeBudget": {
+      "readableWarningMb": 25,
+      "selfExtractWarningMb": 12
+    }
+  }
+}

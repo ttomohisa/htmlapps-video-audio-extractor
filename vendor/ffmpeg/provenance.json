@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 2,
+  "sourceType": "github-release",
+  "repository": "ttomohisa/htmlapps-ffmpeg-wasm-builder",
+  "tag": "v1.10.0",
+  "releaseCommit": "c0f90882b9b9e5a724f10b1ae3e17a25d0b12d9c",
+  "releaseId": 400577471,
+  "releaseAsset": {
+    "id": 602176850,
+    "name": "ffmpeg-wasm-video-audio-extractor-v1.10.0.zip",
+    "sizeBytes": 1632881,
+    "sha256": "e7b1f45792b1589b6b7d82f61d0ec3cb06c11e9404e6333d26c5a12bcf216a4f"
+  },
+  "checksumsAsset": {
+    "name": "SHA256SUMS.txt",
+    "sha256": "1788c5e1f5717192b2ee7dd62cfae1d76e99bef000e291ef8d98f6ad72b955bf"
+  },
+  "buildInfoAsset": {
+    "name": "BUILDINFO-video-audio-extractor.txt",
+    "sha256": "1cc0de3c1240e24fa388b1b859948714c8d3b52e4a4fdacdf99a7845fb9f9612"
+  },
+  "correspondingSource": {
+    "name": "ffmpeg-wasm-sources-v1.10.0.tar.gz",
+    "sha256": "0f087fe1e3992f2a6569849e06f41baff0d492a048d5eb86c09fa4c81c7d1493"
+  },
+  "profile": "video-audio-extractor",
+  "builderVersion": "1.10.0",
+  "lameVersion": "4.0",
+  "lameSourceSha256": "3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb",
+  "manifestSha256": "0bf0b0d49bf536459233d9024637ec3f341761341db860a958d4b7413fa8460e",
+  "embeddedFiles": {
+    "ffmpeg.js": {
+      "bytes": 69619,
+      "sha256": "175e8f7cfa5d9c9f0ff234dfe25469148540fdac90678a0f231e74b3d1a05f7d"
+    },
+    "ffmpeg.wasm": {
+      "bytes": 1659543,
+      "sha256": "850882b0d7d7703cc40b2de1339586c527c89ee3477089a6eb083849b1d57dbc"
+    },
+    "browser-ffmpeg.js": {
+      "bytes": 27886,
+      "sha256": "698798d1401380e4987c34293e6cf45756ef6cc8a9ca21635685fa4afe0fd1dd",
+      "gitBlob": "fb653c15b7669c4189ecf9c42418643bc958ffe8"
+    }
+  },
+  "vendorAcquisition": {
+    "method": "same-release-commit-ci-artifact",
+    "workflowRunId": 36711283268,
+    "artifactId": 11094228249,
+    "artifactName": "ffmpeg-wasm-video-audio-extractor-c0f90882b9b9e5a724f10b1ae3e17a25d0b12d9c",
+    "artifactDigest": "sha256:01bf79ba9193d07740afe5f1c4ee0d765383d42928b871be03df6f94d19e4f5a",
+    "note": "Vendored core files were refreshed from the successful main CI artifact built from the exact v1.10.0 release commit. The production pin above is the tagged GitHub Release asset and its SHA-256."
+  },
+  "developmentOnly": false
+}

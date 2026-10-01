@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 8,
+  "builderVersion": "1.10.0",
+  "profile": "video-audio-extractor",
+  "displayName": "Video Audio Extractor",
+  "binaryLicense": "LGPL-2.1-or-later",
+  "versions": {
+    "emscripten": "6.0.6",
+    "emscriptenCommit": "ce75e06884093bcefb86a6b8fd56a5d62a4cc245",
+    "ffmpegRef": "n9.0.1",
+    "ffmpegCommit": "bf1b838f2ab88b4f8fd83443325c782ea0e0f7fa",
+    "x264Ref": "stable",
+    "x264Commit": "31e19f92f00c7003fa115047ce50978bc98c3a0d",
+    "x264Linked": false,
+    "zlibLinked": false,
+    "freetypePortLinked": false,
+    "harfbuzzPortLinked": false,
+    "libwebpRef": "v1.6.0",
+    "libwebpCommit": "4fa21912338357f89e4fd51cf2368325b59e9bd9",
+    "libwebpLinked": false,
+    "libvpxRef": "v1.16.0",
+    "libvpxCommit": "1024874c5919305883187e2953de8fcb4c3d7fa6",
+    "libvpxLinked": false,
+    "libopusRef": "v1.5.2",
+    "libopusCommit": "ddbe48383984d56acd9e1ab6a090c54ca6b735a6",
+    "libopusLinked": false,
+    "lameVersion": "4.0",
+    "lameSourceSha256": "3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb",
+    "libmp3lameLinked": true
+  },
+  "runtime": {
+    "frontend": "public-libav-runner",
+    "runnerApiVersion": 1,
+    "threading": "single-thread",
+    "factory": "createFFmpegCore",
+    "pthreadPoolSize": 0,
+    "decoderThreadCount": 1,
+    "encoderThreadCount": 1,
+    "x264LookaheadThreadCount": 0,
+    "requiresSharedArrayBuffer": false,
+    "requiresCrossOriginIsolation": false,
+    "fileProtocolSingleHtml": true,
+    "workerFsInput": true,
+    "pthreadWorkerStrategy": "none"
+  },
+  "capabilities": {"operation":"video-audio-extractor","inspectAudioStreams":true,"singleTrack":true,"streamCopy":true,"copyFormats":["m4a","opus","mp3","ogg","flac"],"transcode":true,"transcodeFormats":["m4a","wav","mp3"],"aacBitratesKbps":[128,192,256],"mp3BitratesKbps":[128,192,256,320],"mp3Channels":[1,2],"mp3Encoder":"libmp3lame","pcmBits":16,"workerFsInput":true,"arbitraryFfmpegArgs":false},
+  "catalog": {
+    "filters": [],
+    "encoders": [],
+    "decoders": [],
+    "muxers": [],
+    "demuxers": []
+  },
+  "files": {
+    "ffmpeg.js": { "bytes": 69619, "sha256": "175e8f7cfa5d9c9f0ff234dfe25469148540fdac90678a0f231e74b3d1a05f7d" },
+    "ffmpeg.wasm": { "bytes": 1659543, "sha256": "850882b0d7d7703cc40b2de1339586c527c89ee3477089a6eb083849b1d57dbc" },
+    "ffmpeg.js.gz": { "bytes": 18941 },
+    "ffmpeg.wasm.gz": { "bytes": 775785 }
+  }
+}
