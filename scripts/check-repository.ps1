@@ -250,7 +250,7 @@ foreach ($token in @(
   "e7b1f45792b1589b6b7d82f61d0ec3cb06c11e9404e6333d26c5a12bcf216a4f",
   "1632881",
   "c0f90882b9b9e5a724f10b1ae3e17a25d0b12d9c",
-  "developmentOnly = $false"
+  'developmentOnly = $false'
 )) {
   if (-not $releaseImporterText.Contains($token)) { throw "scripts\import-release-ffmpeg.ps1 is missing pinned release marker: $token" }
 }
