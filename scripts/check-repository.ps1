@@ -140,7 +140,7 @@ foreach ($token in @("bytesAsync", "blobUrlAsync", "outputFilename", "window.App
 }
 
 $builderText = Get-Content -Raw -Encoding UTF8 (Join-Path $Root "build-standalone.ps1")
-foreach ($token in @("compressionSetting", "Compress-GzipBytes", "build-size-report.json", "sizeBudget", "DependencyLockPath", "tarballSha256", "__EMBEDDED_ASSET_BUNDLE_JSON__", "AppIconPath", "__APP_ICON_DATA_URI__", "__FFMPEG_JS_GZIP_BASE64__", "__FFMPEG_WASM_GZIP_BASE64__", "__FFMPEG_RUNTIME_SOURCE__", "video-audio-extractor", "rootHtmlOutputPath", 'StartsWith("htmlapps-")')) {
+foreach ($token in @("compressionSetting", "Compress-GzipBytes", "build-size-report.json", "sizeBudget", "DependencyLockPath", "tarballSha256", "__EMBEDDED_ASSET_BUNDLE_JSON__", "AppIconPath", "__APP_ICON_DATA_URI__", "__FFMPEG_JS_GZIP_BASE64__", "__FFMPEG_WASM_GZIP_BASE64__", "__FFMPEG_RUNTIME_SOURCE__", "video-audio-extractor", "rootHtmlOutputPath", 'StartsWith("htmlapps-"')) {
   if (-not $builderText.Contains($token)) { throw "build-standalone.ps1 is missing required asset pipeline marker: $token" }
 }
 if ($builderText.Contains("__EMBEDDED_ASSET_BUNDLE_BASE64__")) { throw "build-standalone.ps1 must not wrap the full asset bundle in Base64." }
