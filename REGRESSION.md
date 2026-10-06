@@ -167,3 +167,21 @@ The dedicated Builder profile browser smoke test covers:
 - [ ] Direct `file://` opening of `video-audio-extractor.html`, `dist/index.html`, and `dist/index.self-extract.html`.
 - [ ] DevTools Network remains empty after initial document load during inspect/process/preview/save.
 - [ ] Console shows no unexpected errors during the complete flow.
+
+
+## Next-run filename reset and dotted-name regressions
+
+`node scripts/test-output-filename.cjs [HTML path]` executes application functions and event bindings in a synthetic Node VM harness. With no path it tests `src/index.template.html`; the repository checker also runs readable, root, and restored self-extract output. It does not run a browser, decode media, or establish visual accessibility.
+
+Automated coverage:
+- Default multi-dot source names and custom dotted names survive repeated blur/extract/save.
+- Reset restores the current source stem plus `-audio`, focuses the field, and preserves track/format/quality/channels and preference boundaries.
+- Reset is disabled and guarded without usable input and during preparation/processing; cancellation/failure restore availability.
+- Reset/edit leave a completed result's captured filename and URL intact; successful retry uses the new draft and revokes only the superseded URL.
+- Path/control/invalid characters, empty/all-dot input, reserved device names with dot suffixes, Unicode and truncation boundaries stay safe and idempotent.
+- Actual selected stream index, WORKERFS, copy/M4A/MP3/WAV arguments, CSP and five-key preferences remain unchanged.
+
+Manual follow-up, not claimed by the automated suite:
+- [ ] Keyboard Enter/Space activation, visible focus, and correct field focus after reset.
+- [ ] Japanese/English at desktop and 320 px widths, including long names and helper text.
+- [ ] Real media extraction/download in all output modes and direct `file://` use in supported browsers.

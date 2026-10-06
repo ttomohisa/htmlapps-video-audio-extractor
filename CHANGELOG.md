@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Added **Use video name / 動画名を使う** to restore the next extraction's source-derived filename and focus the field.
+- Fixed repeated filename normalization removing internal dot segments from source-derived and custom basenames.
+- Hardened bounded filename sanitation for dotted Windows device names, trailing dots, control characters, and Unicode. Completed-result filenames and Blob URLs remain unchanged by edits/reset.
+- Added dependency-free synthetic filename/reset regressions across source, readable/root output, and restored self-extract output in the repository check.
+
 ## 1.0.0 - Stable release - 2026-10-02
 
 - Promoted the release candidate to the first stable release without changing the verified extraction/conversion feature set.
