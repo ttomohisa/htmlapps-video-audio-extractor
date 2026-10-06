@@ -361,6 +361,12 @@ if ([string]::IsNullOrWhiteSpace([string]$app.name)) { throw "app.config.json: n
 if ([string]::IsNullOrWhiteSpace([string]$app.slug)) { throw "app.config.json: slug is required" }
 if ([string]::IsNullOrWhiteSpace([string]$app.version)) { throw "app.config.json: version is required" }
 
+# Execute app behavior before packaging so filename regressions fail the build.
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) { throw "Node.js is required for app behavior regression checks." }
+$filenameTestPath = Join-Path $Root "scripts\test-output-filename.cjs"
+& node $filenameTestPath
+if ($LASTEXITCODE -ne 0) { throw "Source filename behavior regression failed." }
+
 $buildArguments = @{}
 if ($ForceDownload) { $buildArguments.ForceDownload = $true }
 & (Join-Path $Root "build-standalone.ps1") @buildArguments
@@ -385,6 +391,12 @@ for ($i = 0; $i -lt $rootBytes.Length; $i += 1) {
 # v1.0 desktop result navigation regression.
 foreach ($token in @("function navigateToStep(page", "extractAgainButton').onclick=()=>navigateToStep('format')", "resultBackButton').onclick=()=>navigateToStep('format')")) {
   if (-not $sourceText.Contains($token)) { throw "src\index.template.html is missing v1.0 desktop navigation marker: $token" }
+}
+
+# Exercise the generated release variants, including the restored gzip payload.
+foreach ($filenameTestHtml in @($readableOutputPath, $rootHtmlPath, (Join-Path $Root "dist\index.self-extract.html"))) {
+  & node $filenameTestPath $filenameTestHtml
+  if ($LASTEXITCODE -ne 0) { throw "Generated filename behavior regression failed: $filenameTestHtml" }
 }
 
 Write-Host "[OK] Repository-root HTML matches the readable standalone build: $rootHtmlPath" -ForegroundColor Green

@@ -126,6 +126,12 @@ Example: `meeting.mp4` → `meeting-audio.m4a`.
 
 Keep extension outside the editable basename field and manage it automatically. Sanitize invalid characters. Empty input falls back to a safe default.
 
+The basename belongs to the next extraction. **動画名を使う / Use video name** restores the selected video's basename plus `-audio` and focuses the editable field. It is disabled before a usable video is inspected and during preparation/processing, and does not change the selected track, format, quality, channels, preferences, or an existing completed result.
+
+Remove only the source filename's final extension when deriving the default. Keep internal dots in both source-derived and user-entered basenames (`lecture.part1.mov` → `lecture.part1-audio.m4a`). Repeated blur, reset, extraction and save must not remove further segments. Sanitize path separators, Windows-invalid characters, control characters, trailing spaces/dots, and reserved device names even before a dot (`CON.v2` → `CON-file.v2`). Keep the existing 110 UTF-16 code-unit basename limit without splitting a surrogate pair; source defaults reserve six characters for `-audio`. Empty/all-dot input falls back to `audio`. The format-owned extension is separate from the editable basename, including when the user types a dot suffix.
+
+A completed result retains the filename captured when it was created and its Blob URL. Editing/resetting the next-run field does not rename that result; a successful new extraction captures the new name. Failed or cancelled retries preserve the previous result.
+
 Success state includes format, duration, size, preview if the browser can play the generated audio, and an explicit save action such as `M4Aを保存 / Save M4A`. Do not use a context-free `保存 / Save` button.
 
 If native playback is unsupported, explain that preview is unavailable but saving is still possible.
