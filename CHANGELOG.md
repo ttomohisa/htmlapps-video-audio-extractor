@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### 1.0.1 header and Help consistency
+
+- Standardize the language switcher to EN / JA with localized target-language labels/tooltips and add the localized Help tooltip. Preserve fully local processing copy.
+- Fix Help backdrop dismissal through the existing close/focus-restoration path; keep content clicks, Close, and Escape behavior intact.
+- Add executable header, preference-reload and Help-boundary regressions for source, readable/root and restored self-extract runtimes.
+
 - Added **Use video name / 動画名を使う** to restore the next extraction's source-derived filename and focus the field.
 - Fixed repeated filename normalization removing internal dot segments from source-derived and custom basenames.
 - Hardened bounded filename sanitation for dotted Windows device names, trailing dots, control characters, and Unicode. Completed-result filenames and Blob URLs remain unchanged by edits/reset.
