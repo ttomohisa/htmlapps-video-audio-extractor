@@ -3,7 +3,7 @@
   "name": "Video Audio Extractor",
   "nameJa": "動画から音声抽出",
   "slug": "video-audio-extractor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Extract one audio track from a video locally in the browser, unchanged or converted to M4A / MP3 / WAV.",
   "descriptionJa": "動画から音声トラックを1つ選び、ブラウザ内で音声ファイルとして取り出すツールです。",
   "defaultLanguage": "auto",

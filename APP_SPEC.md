@@ -10,6 +10,7 @@ The user-provided formal specification dated 2026-09-29 is authoritative. Browse
 - **Repository:** `ttomohisa/htmlapps-video-audio-extractor`
 - **Development version:** `0.1.0`
 - **First stable release:** `1.0.0`
+- **Current version:** `1.0.1`
 - **Base template:** htmlapps-template v1.3.0 or newer current template at development start
 - **FFmpeg base:** `ttomohisa/htmlapps-ffmpeg-wasm-builder`
 - **Builder profile:** `video-audio-extractor`
@@ -291,7 +292,7 @@ Use SVG icons, not emoji. `assets/favicon.svg` and the upper-left brand icon use
 
 ## 18. Japanese / English
 
-One HTML supports Japanese and English without reload. Use natural UI wording rather than literal translation. Verify long English strings at 360px.
+One HTML supports Japanese and English without reload. The header shows EN in Japanese and JA in English, with localized target-language accessible labels and tooltips. Help has a localized accessible name and tooltip and closes with its Close button, Escape, or an outside-backdrop click, restoring focus to the opener; clicks inside stay open. Use natural UI wording rather than literal translation. Verify long English strings at 360px.
 
 ## 19. Error model
 
