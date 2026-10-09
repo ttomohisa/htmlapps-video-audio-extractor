@@ -10,7 +10,7 @@ The user-provided formal specification dated 2026-09-29 is authoritative. Browse
 - **Repository:** `ttomohisa/htmlapps-video-audio-extractor`
 - **Development version:** `0.1.0`
 - **First stable release:** `1.0.0`
-- **Current version:** `1.0.1`
+- **Current version:** `1.0.2`
 - **Base template:** htmlapps-template v1.3.0 or newer current template at development start
 - **FFmpeg base:** `ttomohisa/htmlapps-ffmpeg-wasm-builder`
 - **Builder profile:** `video-audio-extractor`
@@ -452,3 +452,9 @@ v1.0.0 requires correct audio-stream recognition, multi-track selection, tested 
 7. future features.
 
 Prefer reliable completion of one task over adding features.
+
+## v1.0.2 icon consistency
+
+- The canonical icon background and matching green details use `#16624f`.
+- Background corner radii are exactly 25% of their corresponding width and height; existing bounds, padding, and foreground artwork are preserved.
+- Header, favicon, and self-extract loader inherit the canonical `assets/favicon.svg`.
