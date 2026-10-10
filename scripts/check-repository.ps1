@@ -405,6 +405,11 @@ foreach ($filenameTestHtml in @($readableOutputPath, $rootHtmlPath, (Join-Path $
 }
 
 Write-Host "[OK] Repository-root HTML matches the readable standalone build: $rootHtmlPath" -ForegroundColor Green
+foreach ($target in @("src\index.template.html", "video-audio-extractor.html", "dist\index.html", "dist\index.self-extract.html")) {
+  & node (Join-Path $Root "scripts\test-dialog-layout.cjs") (Join-Path $Root $target)
+  if ($LASTEXITCODE -ne 0) { throw "Dialog layout regression failed for $target" }
+}
+
 Write-Host "[OK] Repository check passed." -ForegroundColor Green
 
 # WebRTC readiness DataChannel regression
