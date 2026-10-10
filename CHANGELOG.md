@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3] - 2026-10-10
+
+### Fixed
+- Keep Help and confirmation headers visible while their bodies scroll on short or zoomed viewports.
+- Prevent background page scrolling while a native modal is open, and dismiss confirmation backdrops without losing existing audio.
+- Wrap the narrow header title and version instead of clipping them; preserve the shared decorative local-processing shield.
+- Add source-handler and generated layout regressions.
+
 ## [1.0.2] - 2026-10-09
 
 ### Fixed

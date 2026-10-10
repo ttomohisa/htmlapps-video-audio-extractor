@@ -458,3 +458,9 @@ Prefer reliable completion of one task over adding features.
 - The canonical icon background and matching green details use `#16624f`.
 - Background corner radii are exactly 25% of their corresponding width and height; existing bounds, padding, and foreground artwork are preserved.
 - Header, favicon, and self-extract loader inherit the canonical `assets/favicon.svg`.
+
+## Dialog and narrow-header bounds (1.0.3)
+
+- Native Help and confirmation dialogs keep a fixed header and an internally scrollable body; final content and affirmative/cancel controls remain reachable at short and narrow viewports.
+- Lock both background page scrolling roots only while a native modal is open. Dismiss confirmation by Close, Cancel, Escape or an outside-backdrop click, preserving existing audio and restoring opener focus. Inside and keyboard-generated child clicks do not dismiss it.
+- The narrow header wraps its complete localized name and version while retaining the language and Help controls. Preserve the existing decorative shared shield and canonical app artwork.
