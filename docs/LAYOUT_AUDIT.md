@@ -9,6 +9,7 @@ Headed cloud Chromium confirmed these issues:
 - At 1180×300, keyboard End scrolled the outer Help dialog and moved Close to −367 px. At 320×252 CSS pixels, Close moved to −801 px. Final Help content was reachable only after the header disappeared.
 - At 320×252, the confirmation Open button initially extended beyond the viewport. Scrolling to it clipped the title/Close. Outside wheel also moved the underlying page, and backdrop click did not dismiss confirmation.
 - The narrow English header clipped the complete app name and visually hid its version.
+- Final preview verification found that desktop-to-narrow resizing while replacement confirmation was open hid its opener in an inactive Video panel; closing preserved the result but left focus on the document body.
 
 ## Scoped change
 
@@ -18,11 +19,11 @@ Use open-only flex shells, fixed headers and shrinking scrollable bodies for bot
 
 - Test-first: four new modal/layout/backdrop assertions failed on baseline; shield and existing close-route checks passed. All 6 pass after the change.
 - Actual confirmation handlers are exercised for outside clicks at each edge, inside and keyboard-generated child clicks, Close, Cancel, Escape, affirmative completion and focus restoration.
-- Filename/lifecycle 14, header/Help 11 and new dialog checks 6 all pass on source, root, readable and restored self-extract variants. Icon tests 3/3 pass.
+- Filename/lifecycle 14, header/Help 11 and dialog checks 9 all pass on source, root, readable and restored self-extract variants. Icon tests 3/3 pass.
 - Reconstruction proved baseline source/root assembly and unchanged official engine/runtime hashes. The wrapper restores exact readable bytes. Local PowerShell is unavailable; official Windows CI remains mandatory.
 - Actual baseline saved files from the selected second synthetic audio track were independently fully decoded: unchanged AAC/M4A, 128 kbps mono MP3 and PCM16 WAV. All retained the expected 880 Hz tone; the M4A packets exactly matched all 142 source packets. Editing the next-run name did not rename the existing result.
 
-Exact-head official CI/artifacts and final native preview results remain pending and will be recorded in the PR before Ready. No pending checklist item is presumed passed.
+The initial exact-head official CI and artifact verification passed. Final native verification reproduced the hidden-opener transition above; three additional actual-handler regressions failed before the focus fallback and pass afterward. A visible original opener remains preferred, followed by the active visible mobile tab and then visible Help. Disabled/disconnected/unfocusable candidates are skipped without page navigation. Updated exact-head CI/artifact verification and the targeted native focus supplement remain required before Ready. No pending checklist item is presumed passed.
 
 ## Limits
 

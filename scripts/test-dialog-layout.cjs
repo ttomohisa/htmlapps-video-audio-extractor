@@ -28,7 +28,9 @@ test('existing local-processing badge keeps the decorative shared shield',()=>{
 
 function confirmHarness(){
   const elements=new Map(),document={activeElement:null};
-  const $=id=>{if(!elements.has(id))elements.set(id,{id,isConnected:true,open:false,listeners:{},focus(){document.activeElement=this},showModal(){this.open=true},close(){this.open=false},addEventListener(name,fn){this.listeners[name]=fn},getBoundingClientRect(){return{left:20,right:300,top:28,bottom:252}}});return elements.get(id)};
+  const $=id=>{if(!elements.has(id))elements.set(id,{id,isConnected:true,visible:true,disabled:false,acceptsFocus:true,open:false,listeners:{},focusCalls:0,focus(options){this.focusCalls++;this.focusOptions=options;if(this.isConnected&&this.visible&&!this.disabled&&this.acceptsFocus)document.activeElement=this},showModal(){this.open=true},close(){this.open=false;document.activeElement=null},addEventListener(name,fn){this.listeners[name]=fn},getClientRects(){return this.visible?[{}]:[]},getBoundingClientRect(){return{left:20,right:300,top:28,bottom:252}}});return elements.get(id)};
+  document.activeTab=$('#activeMobileTab');
+  document.querySelector=selector=>{assert.equal(selector,'.mobile-tab[aria-current="step"]');return document.activeTab};
   const line=html.split('\n').find(s=>s.startsWith('    const Confirm='));assert.ok(line,'execute actual Confirm implementation');
   const context=vm.createContext({$,document,requestAnimationFrame:fn=>fn()});vm.runInContext(line.replace('const Confirm=','globalThis.Confirm='),context);
   const opener=$('#replaceButton');opener.focus();const promise=context.Confirm.ask('Synthetic unsaved result');
@@ -46,5 +48,38 @@ test('inside and child keyboard clicks preserve confirmation; existing routes se
     const h=confirmHarness();h.dialog.listeners.click?.({target:h.dialog,clientX:100,clientY:100});h.dialog.listeners.click?.({target:{},clientX:0,clientY:0});assert.equal(h.dialog.open,true);
     if(route==='Escape'){let prevented=false;h.dialog.listeners.cancel({preventDefault(){prevented=true}});assert.ok(prevented)}else h.$(route).onclick();
     assert.equal(await h.promise,route==='#confirmOk');assert.equal(h.dialog.open,false);assert.equal(h.document.activeElement,h.opener);
+  }
+});
+test('hidden opener after a breakpoint change returns focus to the active visible mobile tab',async()=>{
+  for(const route of ['#confirmClose','#confirmCancel','#confirmOk','Escape','backdrop']){
+    const h=confirmHarness();h.opener.visible=false;
+    const inactive=h.$('#inactiveMobileTab');
+    if(route==='Escape')h.dialog.listeners.cancel({preventDefault(){}});
+    else if(route==='backdrop')h.dialog.listeners.click({target:h.dialog,clientX:0,clientY:0});
+    else h.$(route).onclick();
+    assert.equal(await h.promise,route==='#confirmOk');
+    assert.equal(h.document.activeElement,h.document.activeTab);
+    assert.equal(h.document.activeTab.focusOptions.preventScroll,true);
+    assert.equal(inactive.focusCalls,0,'inactive panels/tabs must not be activated');
+  }
+});
+test('disconnected, disabled or nonfocusable opener falls back without changing the selected tab',async()=>{
+  for(const property of ['isConnected','disabled','acceptsFocus']){
+    const h=confirmHarness(),active=h.document.activeTab;
+    h.opener[property]=property==='disabled';
+    h.$('#confirmCancel').onclick();
+    assert.equal(await h.promise,false);
+    assert.equal(h.document.activeElement,active);
+    assert.equal(h.document.activeTab,active);
+  }
+});
+test('hidden or disabled active mobile tab uses the visible Help button as final fallback',async()=>{
+  for(const property of ['visible','disabled']){
+    const h=confirmHarness();h.opener.isConnected=false;
+    h.document.activeTab[property]=property==='disabled';
+    h.$('#confirmCancel').onclick();
+    assert.equal(await h.promise,false);
+    assert.equal(h.document.activeElement,h.$('#helpButton'));
+    assert.equal(h.$('#helpButton').focusOptions.preventScroll,true);
   }
 });

@@ -5,6 +5,7 @@
 ### Fixed
 - Keep Help and confirmation headers visible while their bodies scroll on short or zoomed viewports.
 - Prevent background page scrolling while a native modal is open, and dismiss confirmation backdrops without losing existing audio.
+- Restore confirmation focus to a visible control after a responsive breakpoint hides the original opener, without changing the active page or audio result.
 - Wrap the narrow header title and version instead of clipping them; preserve the shared decorative local-processing shield.
 - Add source-handler and generated layout regressions.
 
