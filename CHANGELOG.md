@@ -17,6 +17,8 @@
 
 ## Unreleased
 
+- Hide only the informational mobile footer and move the existing build-information block intact to the end of Help.
+
 ### 1.0.1 header and Help consistency
 
 - Standardize the language switcher to EN / JA with localized target-language labels/tooltips and add the localized Help tooltip. Preserve fully local processing copy.
