@@ -10,7 +10,7 @@ The user-provided formal specification dated 2026-09-29 is authoritative. Browse
 - **Repository:** `ttomohisa/htmlapps-video-audio-extractor`
 - **Development version:** `0.1.0`
 - **First stable release:** `1.0.0`
-- **Current version:** `1.0.2`
+- **Current version:** `1.0.4`
 - **Base template:** htmlapps-template v1.3.0 or newer current template at development start
 - **FFmpeg base:** `ttomohisa/htmlapps-ffmpeg-wasm-builder`
 - **Builder profile:** `video-audio-extractor`

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.4 - 2026-10-27
+
+- Remove redundant language-switching instructions from Japanese and English Help. Preserve the adjacent state-retention, accessibility, and dialog guidance where present.
+
+
 ## [1.0.3] - 2026-10-10
 
 ### Fixed
