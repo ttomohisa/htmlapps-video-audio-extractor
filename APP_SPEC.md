@@ -10,7 +10,7 @@ The user-provided formal specification dated 2026-09-29 is authoritative. Browse
 - **Repository:** `ttomohisa/htmlapps-video-audio-extractor`
 - **Development version:** `0.1.0`
 - **First stable release:** `1.0.0`
-- **Current version:** `1.0.4`
+- **Current version:** `1.0.5`
 - **Base template:** htmlapps-template v1.3.0 or newer current template at development start
 - **FFmpeg base:** `ttomohisa/htmlapps-ffmpeg-wasm-builder`
 - **Builder profile:** `video-audio-extractor`
@@ -465,6 +465,14 @@ Prefer reliable completion of one task over adding features.
 - Lock both background page scrolling roots only while a native modal is open. Dismiss confirmation by Close, Cancel, Escape or an outside-backdrop click, preserving existing audio and restoring opener focus. Inside and keyboard-generated child clicks do not dismiss it.
 - If resizing hides or removes the confirmation opener, return focus to the active visible mobile tab, or the visible Help button as a final fallback, without switching pages or changing media state.
 - The narrow header wraps its complete localized name and version while retaining the language and Help controls. Preserve the existing decorative shared shield and canonical app artwork.
+
+## v1.0.5 playback, localization and processing consistency
+
+- Rendering a completed result again (including on language changes or save) must not reset the audio element's current source or playback position. Unsupported-preview guidance remains visible and localized after a language change.
+- Source inspection errors and retry/cancel messages must be derived from translation keys so a language change updates visible dynamic errors without reloading media.
+- Output duration and size estimates favor the selected audio track's positive duration over the whole video duration. Where playback metadata becomes available, update the displayed result duration with that measured value. Keep the fallback for browsers unable to decode the output for preview.
+- Capture the output basename, encoding bitrate and channel choice at extraction start, before asynchronous runtime preparation. Track selection, format, bitrate, channel options and output basename remain unavailable for editing during preparation and processing, including on language rerenders. Source replacement and cancellation remain supported.
+- Preserve completed results and their captured filenames on failed/cancelled retries.
 
 ## Shared mobile footer and Help metadata
 
