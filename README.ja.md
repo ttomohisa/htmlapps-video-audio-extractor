@@ -30,7 +30,7 @@ GitHub Pagesから最初のHTMLを取得した後、動画解析、音声抽出�
 - **単一HTMLで利用** — FFmpeg JavaScript、WebAssembly、ブラウザーruntime、UIをstandalone HTMLへ内包します。
 - **HTML取得後はオフライン利用可能** — 対応ブラウザーでは保存したHTMLを `file://` で直接開けます。
 - **実行時の外部通信なし** — `connect-src 'none'` を含むCSPを使用し、CDN、Analytics、Telemetry、外部フォント、実行時アップデート確認を行いません。
-- **日本語 / 英語、PC / スマートフォン対応** — 同じHTML内で言語を切り替え、スマホでは「動画 / 音声 / 形式 / 結果」のステップUIを使います。
+- **日本語 / 英語、PC / スマートフォン対応** — 同じHTML内で言語を切り替え、スマホでは「動画 / 音声 / 形式 / 結果」のステップUIを使います。スマホ表示では「完全ローカル処理」の表示を省き、動画を選んだ後は冒頭の説明を隠します。
 
 ## すぐ使う
 
@@ -108,6 +108,8 @@ MP3では3チャンネル以上の元音声を、選択したモノラル / ス�
 4. 成功後は `https://ttomohisa.github.io/htmlapps-video-audio-extractor/` で利用できます。
 
 Pages未設定でもworkflowはビルド検証とstandalone artifactの保存を行います。
+
+PRを `main` へマージすると、`release-on-merge.yml` が単一HTMLを検証・再生成し、`app.config.json` のバージョンに対応する `v<version>` タグとGitHub Releaseを作成します。通常版 `video-audio-extractor.html` と自己展開版 `video-audio-extractor.self-extract.html` を添付し、既存のタグがある場合は重複リリースを行いません。
 
 ## 開発・ビルド構成
 
