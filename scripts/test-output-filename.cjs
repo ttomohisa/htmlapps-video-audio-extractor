@@ -12,7 +12,7 @@ let html = fs.readFileSync(inputPath, 'utf8');
 const payload = html.match(/<script\s+id="self-extract-payload"\s+type="application\/octet-stream">([A-Za-z0-9+/=\r\n]+)<\/script>/);
 if (payload) html = gunzipSync(Buffer.from(payload[1], 'base64')).toString('utf8');
 const lines = html.split('\n');
-const functionNames = ['safeBase', 'defaultOutputBase', 'useVideoName', 'normalizedOutputBase', 'selectedTrack', 'outputSpec', 'virtualInputPath', 'workerFsBlob', 'isCurrentOperation', 'abortError', 'chooseDefaultTrack', 'loadSource', 'extract', 'saveResult', 'setPhase', 'renderFormat', 'cancelCurrent', 'formatName', 'revokeResult'];
+const functionNames = ['safeBase', 'defaultOutputBase', 'sourceAudioDuration', 'useVideoName', 'normalizedOutputBase', 'selectedTrack', 'outputSpec', 'virtualInputPath', 'workerFsBlob', 'isCurrentOperation', 'abortError', 'chooseDefaultTrack', 'loadSource', 'extract', 'saveResult', 'setPhase', 'renderFormat', 'cancelCurrent', 'formatName', 'revokeResult'];
 const functions = functionNames.flatMap(name => lines.filter(line => new RegExp(`^\\s*(?:async )?function ${name}\\(`).test(line))).join('\n');
 const events = lines.find(line => line.trimStart().startsWith("$('#extractButton').onclick=extract;"));
 assert.ok(events, 'The app action handlers must be tested');
@@ -152,6 +152,35 @@ test('changing sources replaces the default; copy and conversion keep the actual
     assert.equal(args.streamIndex,7);assert.equal(args.kind,mode==='copy'?'copy':'transcode');assert.equal(args.format,mode==='copy'?'m4a':mode);
     if(mode==='mp3'){assert.equal(args.bitrateKbps,256);assert.equal(args.channels,1);}assert.equal(h.state.result.name,`second.part-audio.${mode==='copy'?'m4a':mode}`);
   }
+});
+
+test('selected audio duration takes priority over container and processing snapshots settings', async()=>{
+  const h=harness();
+  h.setReport({format:{name:'mov,mp4',duration:240,videoStreamCount:1,audioStreamCount:2},audioStreams:[
+    {index:2,duration:240,channels:2,sampleRate:48000,codec:{name:'opus',bitRate:128000},copy:{supported:true,format:'opus',extension:'opus'},transcode:{supported:true,formats:['m4a','mp3','wav']}},
+    {index:7,default:true,duration:12.5,channels:6,sampleRate:48000,codec:{name:'aac',bitRate:192000},copy:{supported:true,format:'m4a',extension:'m4a'},transcode:{supported:true,formats:['m4a','mp3','wav']}}
+  ]});
+  await h.load('lecture.mov');h.state.outputMode='mp3';h.state.mp3BitrateKbps=320;h.context.renderFormat();
+  h.element('#outputFilename').value='captured.v2';
+  let continuePreparation;h.setGetRunner(()=>new Promise(resolve=>{continuePreparation=resolve;}));
+  const promise=h.context.extract();
+  assert.equal(h.state.phase,'preparing');
+  for(const selector of ['#outputFilename','#aacBitrate','#mp3Bitrate','#mp3Channels'])assert.equal(h.element(selector).disabled,true,selector);
+  // Programmatic mutations simulate a stale handler firing despite disabled controls.
+  h.element('#outputFilename').value='late-edit';h.state.mp3BitrateKbps=128;h.state.mp3Channels=2;
+  continuePreparation(h.runner);await promise;
+  assert.equal(h.calls.at(-1).args.kind,'transcode');assert.equal(h.calls.at(-1).args.bitrateKbps,320);
+  assert.equal(h.calls.at(-1).args.channels,1);assert.equal(h.state.result.name,'captured.v2.mp3');
+  assert.equal(h.state.result.duration,12.5);assert.equal(h.context.sourceAudioDuration(h.state.report.audioStreams[0]),240);
+  assert.equal(h.element('#outputFilename').disabled,false);assert.equal(h.element('#mp3Bitrate').disabled,false);
+});
+
+test('missing track duration falls back to positive container duration only', async()=>{
+  const h=harness();await h.load('fallback.mov');
+  const tr=h.state.report.audioStreams.find(x=>x.index===7);
+  assert.equal(h.context.sourceAudioDuration(tr),2);
+  tr.duration=0;assert.equal(h.context.sourceAudioDuration(tr),2);
+  tr.duration=Number.NaN;h.state.report.format.duration=-3;assert.equal(h.context.sourceAudioDuration(tr),null);
 });
 
 test('runtime privacy and preference boundaries remain unchanged',()=>{
