@@ -2,6 +2,14 @@
 
 ## [1.0.5] - 2026-11-20
 
+### Improved UI and release workflow
+- Simplify nested borders and boxed settings on desktop and mobile, while retaining clear workflow panel boundaries and selected states.
+- Match the PDF Fill & Sign download-tray icon in the video drop area.
+- Hide the local-processing badge on mobile, and hide the intro description after a video is selected on mobile.
+- Replace redundant modal-closing instructions with practical bilingual Help on supported extraction, choosing a track, saving and preview limitations.
+- Create the version tag and publish a GitHub Release containing both standalone HTML variants when a version-changing PR is merged into main; skip already released tags.
+- Add Chromium regressions for the icon, contextual intro, mobile badge and revised Help.
+
 ### Fixed
 - Preserve current audio preview position and unsupported-preview state during language changes, saving, and result updates.
 - Re-translate source errors, processing failures, cancellations, and preview warnings when switching between Japanese and English.
