@@ -10,7 +10,7 @@ The user-provided formal specification dated 2026-09-29 is authoritative. Browse
 - **Repository:** `ttomohisa/htmlapps-video-audio-extractor`
 - **Development version:** `0.1.0`
 - **First stable release:** `1.0.0`
-- **Current version:** `1.0.5`
+- **Current version:** `1.1.0`
 - **Base template:** htmlapps-template v1.3.0 or newer current template at development start
 - **FFmpeg base:** `ttomohisa/htmlapps-ffmpeg-wasm-builder`
 - **Builder profile:** `video-audio-extractor`
@@ -23,11 +23,21 @@ Extract audio contained in a video file entirely in the browser. The primary tas
 1. extract one selected audio stream without decoding/re-encoding when a tested safe container mapping exists;
 2. convert one selected audio stream to MP3, M4A/AAC, or WAV.
 
-The app is not a video editor and does not provide audio trimming/editing features. The intended flow is: choose video → choose audio track when needed → choose save method → create → preview when supported → save.
+The app is not a video editor. From v1.1.0 onward it supports optional time-range extraction and volume/peak normalization with a WAV-only PCM editing path. The main flow is: choose video → choose audio track when needed → choose save method and optional edits → create → preview when supported → save.
 
 Primary users include people extracting audio from phone videos, meetings, lectures, interviews, podcast/source material, multi-audio MP4/MOV/MKV files, and videos whose picture cannot be played natively by the browser.
 
 Codec expertise is not assumed.
+
+## v1.1.0 — WAV-based time-range and volume editing
+
+- The Format step allows an optional Start/End time (`seconds`, `m:ss`, `h:mm:ss`, with fractional seconds) and a gain preset (-12 / -6 / +3 / +6 dB) or **peak normalization to -1 dBFS**. A blank End means the end of the track. Validate before starting and keep an error near the fields for invalid or unknown duration.
+- With either edit enabled, select WAV output and disable stream-copy and other lossy output choices. Do not silently describe the operation as no re-encoding. Switching edits off leaves ordinary stream copy and M4A/MP3/WAV conversion available.
+- The pinned Builder runner has no packet seek, audio filters or direct trimming options. Therefore the first (and only) FFmpeg pass converts the full selected audio track to PCM16 WAV using the current WORKERFS-mounted source; JavaScript then parses WAV chunks, slices precise PCM frames, applies fixed dB gain with int16 saturation or performs a two-pass peak scan targeting -1 dBFS, and builds a new WAV header. No CDN or remote API is involved.
+- Safety limit for this editing path: audio track duration must be known, channel count 1 or 2, sample rate known; estimated temporary PCM size must fit 128 MiB on mobile ≤560px or 256 MiB on desktop. The entire original selected track is decoded even when requesting a small range, which can make long recordings unavailable for edits. This restriction does not apply to the existing no-edit extraction/convert paths.
+- Peak normalization is **not** perceived-loudness/LUFS normalization or noise reduction. Fixed positive gain can clip; normalized output may amplify background noise. Empty/silent data must not divide by zero. A range must be nonempty, within the known source duration, and must not produce an output larger than the configured limit.
+- Snapshot edit settings before asynchronous processing; disable them during preparation/processing. Cancellation must abort both FFmpeg decoding and asynchronous chunked sample editing, leaving existing completed audio intact if a retry is cancelled/failed.
+- Keep the editable output filename, localized Help/controls, PC/mobile format flow and accessible form labels; translate dynamic errors after switching languages.
 
 ## 3. Core user flow and states
 
