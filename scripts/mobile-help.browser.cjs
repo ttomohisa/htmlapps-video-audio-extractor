@@ -94,6 +94,39 @@ async function smoke(page,results,file){
    try{return(await ctx.decodeAudioData(bytes.buffer)).duration;}finally{await ctx.close()}
  },editedBytes.toString('base64'));
  assert.ok(editedSeconds>=.4&&editedSeconds<=.6,'range length near 0.5 sec');
+ assert.equal(await page.locator('#progressTrack').evaluate(el=>el.classList.contains('indeterminate')),false,'cached WAV editing uses determinate progress');
+ // Real transcoding checks: unedited MP3 and M4A are still functional after
+ // selecting and exporting the new time/volume edit features.
+ await page.locator('.mobile-tab[data-page="format"]').click();
+ await page.locator('#trimMode').selectOption('full');
+ await page.locator('#gainMode').selectOption('none');
+ for (const format of ['mp3','m4a']) {
+   const choice=page.locator('.format-choice[data-mode="'+format+'"]');
+   assert.equal(await choice.locator('input').isDisabled(),false,format+': available after clearing edits');
+   await choice.click();
+   assert.equal(await choice.locator('input').isChecked(),true,format+': selected');
+   await page.locator('#outputFilename').fill('convert-'+format);
+   await page.locator('#extractButton').click();
+   await page.waitForFunction(mode=>document.querySelector('#resultFormat')?.textContent===mode.toUpperCase()&&!document.querySelector('#saveButton').disabled,format,{timeout:60000});
+   const pendingConversion=page.waitForEvent('download');
+   await page.locator('#saveButton').click();
+   const converted=await pendingConversion;
+   assert.equal(converted.suggestedFilename(),'convert-'+format+'.'+format);
+   const destination=path.join(results,format+(file.includes('self-extract')?'-self':'-readable')+'.'+format);
+   await converted.saveAs(destination);
+   const content=fs.readFileSync(destination);
+   assert.ok(content.length>200,format+': actual encoded output');
+   if(format==='m4a')assert.equal(content.toString('ascii',4,8),'ftyp','M4A is ISO BMFF');
+   const seconds=await page.evaluate(async encoded=>{
+     const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));
+     const ctx=new AudioContext();
+     try{return(await ctx.decodeAudioData(bytes.buffer)).duration;}finally{await ctx.close()}
+   },content.toString('base64'));
+   assert.ok(seconds>.3&&seconds<5,format+': browser decodes actual output');
+   await page.locator('.mobile-tab[data-page="format"]').click();
+   console.log('PASS real '+format+' transcode after waveform editing '+file);
+ }
+
  console.log('PASS generated Opus + WAV time trim and peak normalize '+file);
  console.log('PASS synthetic canvas/oscillator video to edited-name Opus and native audio decode '+file);
 }
