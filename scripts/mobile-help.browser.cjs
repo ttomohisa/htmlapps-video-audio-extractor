@@ -223,8 +223,7 @@ async function main() {
 
             if (await page.locator(disclosureSelector).getAttribute('open') === null) {
               const summary = page.locator(disclosureSelector).locator('summary');
-              await summary.focus();
-              await page.keyboard.press('Enter');
+              await summary.press('Enter');
               assert.equal(await page.locator(disclosureSelector).getAttribute('open'), '', label);
               assert.notEqual(await page.locator('#buildVersion').innerText(), '—', label);
               assert.ok(!['','—','-'].includes((await page.locator('#coreVersion').innerText()).trim()),label+': populated metadata');
