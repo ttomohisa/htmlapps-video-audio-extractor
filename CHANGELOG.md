@@ -3,6 +3,9 @@
 ## [1.0.5] - 2026-11-20
 
 ### Improved UI and release workflow
+- Remove the redundant filename reset button and its helper text, while retaining editable prefilled filenames and stable completed results.
+- Add 16px horizontal padding to each audio metadata field on desktop and smartphone, keeping separators and the 8px spacing system.
+- Update filename regressions and add Chromium checks for the simplified filename UI and metadata insets.
 - Tighten the intro spacing to 8px above/below the text on mobile, reducing empty space between the sticky header and first workflow panel.
 - Standardize all authored CSS margin/padding/gap spacing to an 8px grid, including desktop, mobile, and dialogs; preserve tap targets and device safe areas.
 - Remove the visible hero heading, retain a screen-reader-only page heading, and collapse the introductory area completely after video selection on mobile.
