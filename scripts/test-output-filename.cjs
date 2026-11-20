@@ -107,7 +107,10 @@ test('uncluttered filename field retains its name, extension and bilingual label
   assert.equal(translations.en.outputFilename,'Output filename');
   assert.ok(!('useVideoName' in translations.ja));
   assert.ok(!('filenameHelp' in translations.en));
-  assert.match(translations.en.helpFilename,/preview is unavailable/i);
+  assert.match(translations.en.helpLimitsNote,/preview is unavailable/i);
+  assert.equal(translations.en.help1.startsWith('Choose a video.'),true);
+  assert.equal(translations.ja.help3,'「音声を取り出す」を押し、完了したら保存します。');
+  assert.ok(!('helpEdit' in translations.en)&&!('helpFilename' in translations.ja));
 });
 
 test('source selection prefills an editable output name without a reset control',async()=>{
