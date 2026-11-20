@@ -1,5 +1,22 @@
 # Video Audio Extractor regression checklist
 
+## v1.0.5 UI and release integration
+
+Automated Chromium smoke (including 320px, 360px, 390px, tablet-width and desktop; both UI languages):
+
+- [x] Tray/down-arrow SVG matches the PDF Fill & Sign reference shape.
+- [x] Local-processing badge is invisible at the mobile page-tab breakpoint but remains visible on desktop.
+- [x] The introductory description is visible before selecting a file and becomes hidden on mobile once video selection is accepted.
+- [x] Help contains audio-selection, conversion and saving guidance rather than dialog-closing implementation instructions.
+- [x] Updated panels, mobile navigation, Help dialogs and long-language layouts retain the existing geometry/overflow checks.
+
+Manual release checks:
+
+- [ ] Review actual desktop and mobile screenshots for overly nested boxes, selected states, touch area and contrast.
+- [ ] Verify the readable/self-extract standalone HTML attachments after PR merge.
+- [ ] Verify release workflow creates the v1.0.5 tag and GitHub Release only after the PR is merged into main, and is idempotent when re-run.
+
+
 ## v1.0.5 preview, localization and settings
 
 Automated (source, readable build, root copy and restored self-extract):
