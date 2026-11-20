@@ -35,6 +35,22 @@ async function smoke(page,results,file){
  // trimming and peak normalization then operate without any external requests.
  await page.locator('.mobile-tab[data-page="format"]').click();
  await page.locator('#trimMode').selectOption('range');
+ assert.equal(await page.locator('#waveLoadButton').isVisible(),true,'waveform load is available in range mode');
+ await page.locator('#waveLoadButton').click();
+ await page.waitForFunction(()=>{const ready=document.querySelector('#waveReady');const canvas=document.querySelector('#waveCanvas');return ready&&!ready.hidden&&canvas.width>0;},null,{timeout:60000});
+ assert.equal(await page.locator('#waveLoadButton').isVisible(),false,'waveform preparation is reused');
+ const wavCanvas=await page.locator('#waveCanvas').evaluate(el=>{const pixels=el.getContext('2d').getImageData(0,0,el.width,el.height).data;return{width:el.width,hasBars:pixels.some((v,i)=>i%4===3&&v>0)};});
+ assert.ok(wavCanvas.width>=200&&wavCanvas.hasBars,'actual waveform contains sampled PCM peaks');
+ await page.locator('#wavePlayButton').click();
+ await page.waitForFunction(()=>{const a=document.querySelector('#waveAudio');return a&&!a.paused&&a.currentTime>.04;},null,{timeout:12000});
+ await page.locator('#wavePlayButton').click();
+ assert.equal(await page.locator('#waveAudio').evaluate(a=>a.paused),true,'audio preview can be paused');
+ const bounds=await page.locator('#wavePlot').boundingBox();
+ await page.locator('#wavePlot').click({position:{x:bounds.width*.35,y:60}});
+ await page.locator('#waveMarkStart').click();
+ assert.ok(await page.locator('#trimStart').inputValue()!=='0:00','set start from selected playback position');
+ await page.locator('#waveEndHandle').press('ArrowLeft');
+ assert.ok(await page.locator('#trimEnd').inputValue()!=='','end marker supports keyboard adjustments');
  await page.locator('#trimStart').fill('0:00.2');
  await page.locator('#trimEnd').fill('0:00.7');
  await page.locator('#gainMode').selectOption('normalize');
