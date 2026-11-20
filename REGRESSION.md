@@ -1,5 +1,18 @@
 # Video Audio Extractor regression checklist
 
+## v1.1.0 waveform-assisted selection
+
+Automated checks:
+- [x] PCM peaks are drawn from decoded WAV and can be played in the browser.
+- [x] Play/pause, seeking, playhead start/end actions and keyboard-adjustable range markers work together with manual time fields.
+- [x] A decoded WAV preview can be reused for the final WAV without a second FFmpeg invocation.
+- [x] Changing the source revokes the preview Blob URL and clears the cache.
+- [x] Japanese/English and narrow-mobile tests cover the new controls.
+
+Manual follow-up:
+- [ ] Test real Android/iPhone touch-drag, speaker output and iOS Safari audio restrictions.
+- [ ] Test unsupported browser-native video codecs with the WAV preview path.
+
 ## v1.1.0 local time-range and gain/peak normalization
 
 Automated checks:
