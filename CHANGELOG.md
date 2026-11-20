@@ -2,6 +2,11 @@
 
 ## [1.1.0] - 2026-11-21
 
+### Release-candidate regression review
+- Fix a waveform-cache extraction progress indicator that remained indeterminate during PCM editing; show determinate progress through completion.
+- Add real Chromium smoke coverage for Opus-to-MP3 and Opus-to-M4A conversion after waveform editing, including browser-decoded output and extension checks.
+- Expand PCM edge-case tests for silent normalization, positive-gain clipping, invalid and oversized WAV inputs, interrupted processing, waveform-load cancellation/retry and stale-source prevention.
+
 ### UI polish
 - Restore a modest 8px top gap above the introductory description for a more balanced desktop/mobile layout.
 - Remove the background and border around the drop-area tray icon while retaining the outlined drop area.
