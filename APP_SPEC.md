@@ -29,6 +29,12 @@ Primary users include people extracting audio from phone videos, meetings, lectu
 
 Codec expertise is not assumed.
 
+## v1.1.0 — Compact introductory spacing, file picker and Help
+
+- Retain an 8px gap above the introductory paragraph on desktop and mobile: removing all top space makes the copy appear cramped. Keep the current mobile behavior hiding the introduction after selecting a source.
+- The drop-area download-tray SVG is frameless, with no colored tile, border or background behind the icon. Retain the drop-area boundary, button and touch targets.
+- Help Basics is limited to three short steps: choose video/track; select an output method with optional time/volume changes; extract and save. Keep Japanese and English direct and parallel, without multi-sentence feature inventories or repeated modal instructions. The no-audio and save-without-preview caveats belong in Supported scope, not the Basics list. Privacy, stored preferences, offline support, codec details and version information remain unchanged.
+
 ## v1.1.0 — Waveform-guided time-range selection
 
 - Choosing **Set a time range** immediately starts the local waveform preparation; there is no extra Show waveform step. Loading status and cancel action remain available, and Reload waveform is offered only after failure/cancellation. The embedded WASM decodes the selected track to WAV.
