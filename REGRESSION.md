@@ -1,5 +1,10 @@
 # Video Audio Extractor regression checklist
 
+## v1.0.5 compact intro spacing
+
+- [x] Mobile Chromium verifies that the introductory copy is within 16px of the header and the first workflow panel (8px design spacing, with text bounding-box tolerance).
+- [x] Keep the explanatory copy visible before file selection and fully hide the intro after accepting a video.
+
 ## v1.0.5 eight-point spacing and quiet cards
 
 Automated source/build regression:
