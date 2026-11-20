@@ -42,7 +42,7 @@ async function smoke(page,results,file){
  assert.equal(await page.locator('#waveLoadButton').isVisible(),false,'waveform starts automatically without a Show waveform button');
  await page.waitForFunction(()=>{const ready=document.querySelector('#waveReady');const canvas=document.querySelector('#waveCanvas');return ready&&!ready.hidden&&canvas.width>0;},null,{timeout:60000});
  assert.equal(await page.locator('#waveLoadButton').isVisible(),false,'retry button hidden when waveform is ready');
- const decodedEnd=await page.evaluate(()=>({end:parseAudioTime(document.querySelector('#trimEnd').value),actual:state.wavePreview?.duration}));
+ const decodedEnd=await page.evaluate(()=>({end:document.querySelector('#trimEnd').value.split(':').map(Number).reduce((total,n)=>total*60+n,0),actual:Number(document.querySelector('#waveEndHandle').getAttribute('aria-valuemax'))}));
  assert.ok(Math.abs(decodedEnd.end-decodedEnd.actual)<.03,'default end matches decoded audio duration: '+JSON.stringify(decodedEnd));
  const wavCanvas=await page.locator('#waveCanvas').evaluate(el=>{const pixels=el.getContext('2d').getImageData(0,0,el.width,el.height).data;return{width:el.width,hasBars:pixels.some((v,i)=>i%4===3&&v>0)};});
  assert.ok(wavCanvas.width>=200&&wavCanvas.hasBars,'actual waveform contains sampled PCM peaks');
