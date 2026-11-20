@@ -98,7 +98,7 @@ test('length limits cannot leave a trailing dot, split Unicode or drop the defau
 
 test('uncluttered filename field retains its name, extension and bilingual labels',()=>{
   assert.doesNotMatch(html, /id="useVideoNameButton"|id="filenameHelp"|class="filename-actions"/);
-  assert.match(html, /<input\b[^>]*id="outputFilename"[^>]*aria-describedby="filenameExtension outputEstimate"/);
+  assert.match(html, /<input\b[^>]*id="outputFilename"[^>]*aria-describedby="filenameExtension"/);
   const translations=vm.runInNewContext('('+translationCode+')');
   assert.deepEqual(Object.keys(translations.ja).sort(),Object.keys(translations.en).sort());
   assert.equal(translations.ja.outputFilename,'出力ファイル名');
