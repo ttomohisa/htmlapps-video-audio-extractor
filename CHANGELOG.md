@@ -3,6 +3,10 @@
 ## [1.0.5] - 2026-11-20
 
 ### Improved UI and release workflow
+- Standardize all authored CSS margin/padding/gap spacing to an 8px grid, including desktop, mobile, and dialogs; preserve tap targets and device safe areas.
+- Remove the visible hero heading, retain a screen-reader-only page heading, and collapse the introductory area completely after video selection on mobile.
+- Tone down panel boundaries, surfaces and selected-state highlights; retain clear step separation without nested card shadows.
+- Add spacing/hierarchy checks for source and standalone builds and Chromium checks for the simplified layout.
 - Simplify nested borders and boxed settings on desktop and mobile, while retaining clear workflow panel boundaries and selected states.
 - Match the PDF Fill & Sign download-tray icon in the video drop area.
 - Hide the local-processing badge on mobile, and hide the intro description after a video is selected on mobile.
