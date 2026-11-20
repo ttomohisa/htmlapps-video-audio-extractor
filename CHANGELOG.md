@@ -3,6 +3,9 @@
 ## [1.1.0] - 2026-11-21
 
 ### Waveform selection
+- Automatically prepare and show the waveform when Set a time range is selected, without a separate Show waveform action; allow retry only if loading fails or is cancelled.
+- Prefill End from the selected track's duration, update from decoded WAV duration while untouched, and retain manual/end-handle changes.
+- Remove redundant hint text below the waveform and time controls; eliminate extra top padding above the intro copy.
 - Generate a local PCM-derived waveform on demand. Play/pause, click/tap seek, set start/end at playhead, drag range handles and adjust sliders with the keyboard on mobile and desktop.
 - Reuse WAV preview data during export, cancel stale load operations, and release preview Blob URLs when changing sources/tracks or leaving range mode.
 - Shorten the WAV-only editing note without the extra warning sentence.
