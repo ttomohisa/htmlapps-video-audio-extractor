@@ -33,13 +33,13 @@ function harness() {
     });
     return elements.get(id);
   };
-  const state = {file:null,report:null,selectedIndex:null,result:null,attempt:null,trimMode:'full',trimStart:'0:00',trimEnd:'',gainMode:'none',wavePreview:null,waveLoading:false,waveAbort:null,waveRequestId:0,waveErrorKey:null,phase:'empty',generation:0,operationId:0,abort:null,outputMode:'copy',mp3Channels:1,aacBitrateKbps:192,mp3BitrateKbps:256,language:'en'};
+  const state = {file:null,report:null,selectedIndex:null,result:null,attempt:null,trimEndAuto:true,trimMode:'full',trimStart:'0:00',trimEnd:'',gainMode:'none',wavePreview:null,waveLoading:false,waveAbort:null,waveRequestId:0,waveErrorKey:null,phase:'empty',generation:0,operationId:0,abort:null,outputMode:'copy',mp3Channels:1,aacBitrateKbps:192,mp3BitrateKbps:256,language:'en'};
   let run = async options => ({files:[{name:options.outputs[0],data:new Uint8Array([1,2,3,4])}]});
   const runner = {run:async options=>{calls.push(options);return run(options);}};
   let getRunner = async()=>runner;
   let url = 0;
   const context = vm.createContext({state,$:element,$$:()=>[],Blob,File,AbortController,Uint8Array,Date,Number,Error,TypeError,
-    console:{error(){}},setTimeout,matchMedia:()=>({matches:false}),URL:{createObjectURL:blob=>{const uri=`blob:synthetic-${++url}`;blobs.push({uri,blob});return uri;},revokeObjectURL:u=>revoked.push(u)},
+    console:{error(){}},setTimeout,requestAnimationFrame:()=>{},matchMedia:()=>({matches:false}),URL:{createObjectURL:blob=>{const uri=`blob:synthetic-${++url}`;blobs.push({uri,blob});return uri;},revokeObjectURL:u=>revoked.push(u)},
     document:{body:{append(){},classList:{add(){},remove(){}}},createElement(tag){assert.equal(tag,'a');return {href:'',download:'',click(){downloads.push({href:this.href,name:this.download});},remove(){}};}},
     BrowserFFmpeg:{videoAudioExtractorInspectArgs:x=>({kind:'inspect',...x}),videoAudioExtractorCopyArgs:x=>({kind:'copy',...x}),videoAudioExtractorTranscodeArgs:x=>({kind:'transcode',...x}),decodeJsonOutput:()=>currentReport},
     getRunner:()=>getRunner(),renderReport(){context.renderFormat();},renderResult(){},unlockTabs(){},setMobilePage(){},announce(){},showToast(){},setSourceError(){},clearAudioPreview(){},navigateToStep(){},
@@ -278,6 +278,36 @@ test('cached full-track waveform is reused when exporting a time-range WAV',asyn
   await h.load('other.mov');
   assert.ok(h.revoked.includes('blob:wave-cache'),'new source releases waveform preview');
   assert.equal(h.state.wavePreview,null);
+});
+
+
+test('source duration prefills End and toggling range prepares waveform without a separate button',async()=>{
+  const h=harness();await h.load('lecture.mov');
+  assert.equal(h.element('#trimEnd').value,'0:02');
+  assert.equal(h.state.trimEndAuto,true);
+  assert.doesNotMatch(html,/id="trimHint"|data-i18n="waveHint"/);
+  assert.match(html,/id="waveLoadButton"[^>]*hidden/,'reload action starts hidden');
+  assert.ok(!html.includes('>波形を表示</button>'),'no explicit Show waveform action');
+
+  const tr=h.state.report.audioStreams.find(x=>x.index===7);
+  tr.channels=1;tr.sampleRate=8000;
+  h.setRun(async options=>({files:[{name:options.outputs[0],data:syntheticWav(8000,1,2,1000)}]}));
+  const change=h.element('#trimMode').listeners.change;
+  assert.equal(typeof change,'function');
+  change({target:{value:'range'}});
+  for(let i=0;i<15&&!h.state.wavePreview;i++)await new Promise(resolve=>setTimeout(resolve,0));
+  assert.ok(h.state.wavePreview,'waveform prepared automatically');
+  assert.equal(h.state.wavePreview.duration,2);
+  assert.equal(h.element('#trimEnd').value,'0:02');
+  assert.equal(h.element('#waveLoadButton').hidden,true,'no extra waveform button');
+  assert.equal(h.calls.at(-1).args.format,'wav','preview uses pinned WAV decoder');
+
+  h.element('#trimEnd').value='0:01.25';
+  h.element('#trimEnd').listeners.input();
+  assert.equal(h.state.trimEndAuto,false,'manual end is no longer default-controlled');
+  assert.equal(h.element('#trimEnd').value,'0:01.25');
+  h.element('#trimMode').listeners.change({target:{value:'full'}});
+  assert.equal(h.state.wavePreview,null,'switching off range releases waveform');
 });
 
 test('time entry accepts m:ss and h:mm:ss but rejects malformed input',()=>{
