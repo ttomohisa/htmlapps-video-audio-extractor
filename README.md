@@ -65,11 +65,11 @@ This wrapper restores the normal standalone HTML locally with `DecompressionStre
 2. Wait for local inspection to finish. If multiple audio tracks are present, choose the track you want.
 3. Choose the output method.
 4. For M4A or MP3, choose the available bitrate. MP3 also offers mono or stereo output.
-5. Edit the output basename if needed, or choose **Use video name** to restore the selected video name plus `-audio`. Then select **Extract audio**.
+5. The output filename is filled automatically from the selected video. Edit it if needed, then select **Extract audio**.
 6. Preview the result when the browser supports the generated audio format, then save it.
 7. Use **Change settings and extract again** to return to the Format section without replacing the source video.
 
-The filename field applies to the next extraction. Internal dots are preserved (`lecture.part1.mov` → `lecture.part1-audio.m4a`), and the output format adds the extension automatically. A completed result keeps its captured filename when you edit or reset this field. Track, format, encoding settings and output filename cannot be edited during extraction; the settings and filename are captured when extraction starts. Changing language or saving does not restart audio preview. The result uses the selected track's duration when available, and updates to the output's actual duration when browser playback metadata is available.
+The filename field applies to the next extraction. Internal dots are preserved (`lecture.part1.mov` → `lecture.part1-audio.m4a`), and the output format adds the extension automatically. A completed result keeps its captured filename when you edit this field. Track, format, encoding settings and output filename cannot be edited during extraction; the settings and filename are captured when extraction starts. Changing language or saving does not restart audio preview. The result uses the selected track's duration when available, and updates to the output's actual duration when browser playback metadata is available.
 
 If you open a new video while a completed result has not been saved, the app asks before replacing it.
 
