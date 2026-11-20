@@ -70,6 +70,10 @@
     .result-grid{gap:0;margin-bottom:13px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
     .result-stat{padding:11px 12px;border-right:1px solid var(--line);border-radius:0;background:transparent}
     .result-stat:last-child{border-right:0}
+    @media(max-width:760px){
+      .format-options{grid-template-columns:1fr}
+      .format-choice:nth-child(odd){border-right:0}
+    }
     @media(max-width:560px){
       .local-badge{display:none}
       body.has-source .page-intro p{display:none}
