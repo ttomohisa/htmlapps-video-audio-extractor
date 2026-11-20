@@ -101,6 +101,34 @@ async function main() {
             assert.equal(await page.locator('.page-intro h1').count(),0,label+': no visible hero title element');
             assert.equal(await page.locator('#useVideoNameButton').count(),0,label+': no unnecessary source-name reset button');
             assert.equal(await page.locator('#filenameHelp').count(),0,label+': no redundant filename helper text');
+            const outputFactLayout = await page.evaluate(language => {
+              const panel=document.querySelector('#formatPanel'), group=document.querySelector('.output-facts');
+              const method=document.querySelector('#methodSummary'), size=document.querySelector('#outputEstimate');
+              const hidden=getComputedStyle(panel).display==='none';
+              if(hidden) panel.classList.add('mobile-active');
+              const oldMethod=method.textContent, oldSize=size.textContent;
+              method.textContent=language==='ja'?'MP3 320 kbps · ステレオ':'MP3 320 kbps · Stereo';
+              size.textContent=language==='ja'?'目安 1.3 MB':'Approx. 1.3 MB';
+              const a=method.getBoundingClientRect(),b=size.getBoundingClientRect(),g=group.getBoundingClientRect();
+              const result={
+                isGrouped:method.parentElement===group&&size.parentElement===group&&group.parentElement.classList.contains('action-row'),
+                flex:getComputedStyle(group).display, direction:getComputedStyle(group).flexDirection,
+                aligned:Math.abs(a.top-b.top)<2&&b.left>a.right&&b.right<=g.right+1,
+                noOverflow:document.documentElement.scrollWidth<=innerWidth,
+                filenameAreaHasEstimate:document.querySelector('.filename-row').contains(size),
+                accessibleLabel:group.getAttribute('aria-label')
+              };
+              method.textContent=oldMethod;size.textContent=oldSize;
+              if(hidden) panel.classList.remove('mobile-active');
+              return result;
+            },language);
+            assert.equal(outputFactLayout.isGrouped,true,label+': estimated size and method share the action row');
+            assert.equal(outputFactLayout.flex,'flex',label+': output facts use flex');
+            assert.equal(outputFactLayout.direction,'row',label+': output facts flow horizontally');
+            assert.equal(outputFactLayout.aligned,true,label+': MP3 facts sit side by side without wrapping');
+            assert.equal(outputFactLayout.noOverflow,true,label+': output facts fit viewport');
+            assert.equal(outputFactLayout.filenameAreaHasEstimate,false,label+': estimate is not beside filename');
+            assert.equal(outputFactLayout.accessibleLabel,language==='ja'?'出力情報':'Output details',label+': group label is localized');
             assert.ok(await page.evaluate(()=>{const host=document.querySelector('#audioSummary');const item=document.createElement('div');item.className='summary-item';item.innerHTML='<span class="summary-label">Codec</span>';host.append(item);const style=getComputedStyle(item);const rect=item.getBoundingClientRect(),label=item.querySelector('span').getBoundingClientRect();const okay=style.paddingLeft==='16px'&&style.paddingRight==='16px'&&(rect.width===0||label.left-rect.left>=15);item.remove();return okay;}),label+': audio metadata label inset on desktop and mobile');
             assert.equal(await page.locator('main > h1.sr-only').count(),1,label+': retained semantic page heading');
             assert.ok(await page.locator('#videoPanel').evaluate(el=>getComputedStyle(el).boxShadow==='none'&&getComputedStyle(el).borderRadius==='8px'),label+': quiet workflow panel styling');
