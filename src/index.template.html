@@ -319,6 +319,157 @@
       onProgress?.(1);
       return{data:result,duration:(end-start)/rate};
     }
+
+    function inspectWavePcm(data){
+      const src=data instanceof Uint8Array?data:new Uint8Array(data);
+      if(src.length<44)throw new Error('Invalid WAV length');
+      const view=new DataView(src.buffer,src.byteOffset,src.byteLength);
+      if(view.getUint32(0,false)!==0x52494646||view.getUint32(8,false)!==0x57415645)throw new Error('Not RIFF/WAVE');
+      let fmt=-1,pcm=-1,size=0;
+      for(let at=12;at+8<=src.length;){
+        const tag=view.getUint32(at,false),n=view.getUint32(at+4,true),end=at+8+n;
+        if(n>src.length-8-at)throw new Error('Invalid WAV chunk');
+        if(tag===0x666d7420)fmt=at+8;
+        if(tag===0x64617461){pcm=at+8;size=n;break}
+        at=end+(n&1);
+      }
+      if(fmt<0||pcm<0||fmt+16>src.length)throw new Error('Missing WAV PCM data');
+      const codec=view.getUint16(fmt,true),channels=view.getUint16(fmt+2,true),rate=view.getUint32(fmt+4,true),align=view.getUint16(fmt+12,true),bits=view.getUint16(fmt+14,true);
+      if(!((codec===1)||(codec===0xfffe&&fmt+28<=src.length&&view.getUint32(fmt+24,true)===1))||channels<1||channels>2||bits!==16||align!==channels*2||rate<8000||rate>192000)throw new Error('Unsupported WAV PCM');
+      const frames=Math.floor(size/align);
+      if(frames<1)throw new Error('No PCM frames');
+      return{src,view,pcm,rate,channels,align,frames,duration:frames/rate};
+    }
+    function waveformPeaks(data){
+      const wav=inspectWavePcm(data),count=640,peaks=new Float32Array(count);
+      for(let i=0;i<count;i++){
+        const start=Math.floor(i*wav.frames/count),end=Math.max(start+1,Math.floor((i+1)*wav.frames/count));
+        const stride=Math.max(1,Math.floor((end-start)/48));
+        let max=0;
+        for(let f=start;f<Math.min(end,wav.frames);f+=stride){
+          const base=wav.pcm+f*wav.align;
+          for(let c=0;c<wav.channels;c++)max=Math.max(max,Math.abs(wav.view.getInt16(base+c*2,true)));
+        }
+        peaks[i]=max/32768;
+      }
+      return{peaks,duration:wav.duration};
+    }
+    function clearWavePreview(){
+      state.waveRequestId++;
+      if(state.waveAbort&&!state.waveAbort.signal.aborted)state.waveAbort.abort();
+      state.waveAbort=null;state.waveLoading=false;state.waveErrorKey=null;
+      const previous=state.wavePreview;state.wavePreview=null;
+      if(previous){
+        const audio=$('#waveAudio');audio.pause();audio.removeAttribute('src');audio.load();
+        URL.revokeObjectURL(previous.url);
+      }
+    }
+    function waveTime(seconds){
+      const cs=Math.max(0,Math.round((Number(seconds)||0)*100));
+      const hours=Math.floor(cs/360000),minutes=Math.floor(cs%360000/6000),secs=Math.floor(cs%6000/100),rest=cs%100;
+      const prefix=hours?hours+':'+String(minutes).padStart(2,'0'):String(minutes);
+      return prefix+':'+String(secs).padStart(2,'0')+(rest?'.'+String(rest).padStart(2,'0'):'');
+    }
+    function waveBounds(){
+      const duration=state.wavePreview?.duration||0;
+      const clamp=t=>Math.max(0,Math.min(duration,t));
+      const start=clamp(parseAudioTime($('#trimStart').value)??0);
+      const end=clamp($('#trimEnd').value.trim()?(parseAudioTime($('#trimEnd').value)??duration):duration);
+      return{start,end,duration};
+    }
+    function updateWaveUi(){
+      const preview=state.wavePreview;
+      if(!preview)return;
+      const audio=$('#waveAudio'),bounds=waveBounds(),duration=bounds.duration||1;
+      $('#waveSelection').style.left=(100*bounds.start/duration)+'%';
+      $('#waveSelection').style.width=(100*Math.max(0,bounds.end-bounds.start)/duration)+'%';
+      const defs=[['waveStartHandle',bounds.start],['waveEndHandle',bounds.end]];
+      for(const [id,time] of defs){
+        const el=$('#'+id);el.style.left=(100*time/duration)+'%';
+        el.setAttribute('aria-valuemax',String(Number(duration.toFixed(3))));
+        el.setAttribute('aria-valuenow',String(Number(time.toFixed(3))));
+        el.setAttribute('aria-valuetext',waveTime(time));
+      }
+      $('#waveCursor').style.left=(100*Math.max(0,Math.min(duration,audio.currentTime||0))/duration)+'%';
+      $('#wavePosition').textContent=waveTime(audio.currentTime||0)+' / '+waveTime(duration);
+      const playing=!audio.paused;
+      $('#wavePlayButton').setAttribute('aria-label',t(playing?'wavePause':'wavePlay'));
+      $('#wavePlayIcon').setAttribute('d',playing?'M8 5v14m8-14v14':'m8 5 11 7-11 7z');
+    }
+    function drawWave(){
+      const data=state.wavePreview,canvas=$('#waveCanvas'),plot=$('#wavePlot');
+      if(!data||!canvas||!plot)return;
+      const width=plot.clientWidth;
+      if(width<1)return;
+      const ratio=Math.min(window.devicePixelRatio||1,2),height=112;
+      canvas.width=Math.max(1,Math.floor(width*ratio));canvas.height=Math.floor(height*ratio);
+      const ctx=canvas.getContext('2d');if(!ctx)return;
+      ctx.scale(ratio,ratio);ctx.clearRect(0,0,width,height);
+      ctx.fillStyle='#16624f';
+      const peaks=data.peaks,peak=Math.max(.02,...peaks);
+      const columns=Math.max(1,Math.floor(width/3));
+      for(let i=0;i<columns;i++){
+        const left=Math.floor(i*peaks.length/columns),right=Math.max(left+1,Math.floor((i+1)*peaks.length/columns));
+        let amplitude=0;for(let j=left;j<right;j++)amplitude=Math.max(amplitude,peaks[j]);
+        const size=Math.max(2,Math.round(94*amplitude/peak));
+        ctx.globalAlpha=.7;
+        ctx.fillRect(i*width/columns,Math.round((height-size)/2),Math.max(1,width/columns-1),size);
+      }
+      ctx.globalAlpha=1;
+      updateWaveUi();
+    }
+    function setWaveBoundary(edge,time){
+      if(!state.wavePreview||['preparing','processing'].includes(state.phase))return;
+      const b=waveBounds(),limit=Math.max(.01,1/state.wavePreview.rate),duration=b.duration;
+      const value=edge==='start'?Math.max(0,Math.min(time,b.end-limit)):Math.min(duration,Math.max(time,b.start+limit));
+      $('#'+(edge==='start'?'trimStart':'trimEnd')).value=waveTime(value);
+      renderFormat();updateWaveUi();
+    }
+    function cancelWaveLoad(){
+      clearWavePreview();renderFormat();
+    }
+    async function loadWavePreview(){
+      if(state.waveLoading||state.wavePreview||state.phase==='inspecting'||['preparing','processing'].includes(state.phase)||state.trimMode!=='range')return;
+      const tr=selectedTrack(),settings=editConfiguration(tr);
+      if(!tr||settings?.error){
+        state.waveErrorKey=settings?.error||'editUnsupported';renderFormat();return;
+      }
+      const generation=state.generation,trackIndex=tr.index,requestId=++state.waveRequestId;
+      const controller=new AbortController();state.waveAbort=controller;state.waveLoading=true;state.waveErrorKey=null;
+      renderFormat();
+      try{
+        const runner=await getRunner();
+        if(controller.signal.aborted||generation!==state.generation||requestId!==state.waveRequestId)return;
+        const output='/waveform-'+generation+'-'+requestId+'.wav';
+        const out=await runner.run({
+          files:[{name:virtualInputPath(state.file,generation),data:workerFsBlob(state.file),workerfs:true}],
+          outputs:[output],
+          args:BrowserFFmpeg.videoAudioExtractorTranscodeArgs({input:virtualInputPath(state.file,generation),streamIndex:trackIndex,format:'wav',output}),
+          signal:controller.signal
+        });
+        if(controller.signal.aborted||generation!==state.generation||requestId!==state.waveRequestId||trackIndex!==state.selectedIndex||state.trimMode!=='range')return;
+        const file=out.files.find(x=>x.name===output)||out.files[0];
+        if(!file||file.data.length>settings.maxBytes+1024)throw new Error('PCM preview exceeds safe size');
+        const wave=waveformPeaks(file.data),info=inspectWavePcm(file.data);
+        const blob=new Blob([file.data],{type:'audio/wav'});
+        const url=URL.createObjectURL(blob);
+        state.wavePreview={data:file.data,url,peaks:wave.peaks,duration:wave.duration,rate:info.rate,trackIndex,generation};
+        const audio=$('#waveAudio');
+        audio.src=url;audio.load();
+        $('#waveReady').hidden=false;
+        requestAnimationFrame(drawWave);
+      }catch(error){
+        if(!controller.signal.aborted&&generation===state.generation&&requestId===state.waveRequestId){
+          console.error(error);
+          state.waveErrorKey=/memory|size|allocation/i.test(String(error?.message||error))?'editTooLarge':'waveError';
+        }
+      }finally{
+        if(requestId===state.waveRequestId){
+          state.waveAbort=null;state.waveLoading=false;
+          renderFormat();requestAnimationFrame(drawWave);
+        }
+      }
+    }
     function bitrateText(v){return Number.isFinite(v)&&v>0?`${Math.round(v/1000)} kbps`:'—'}
     // Output basenames are already extension-free: never strip their internal dots.
     function safeBase(name,maxLength=110){const bounded=value=>value.slice(0,maxLength).replace(/[\uD800-\uDBFF]$/,'').replace(/[.\s]+$/g,'');let s=bounded(String(name||'').replace(/[\\/:*?"<>|\u0000-\u001f\u007f]/g,'-').trim());s=s.replace(/^(con|prn|aux|nul|com[1-9]|lpt[1-9]) *(?=\.|$)/i,'$1-file');return bounded(s)||'audio'}
