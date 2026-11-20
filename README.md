@@ -9,7 +9,7 @@
 
 A privacy-focused, single-HTML Browser Kitty app for extracting one audio track from a video without uploading the selected media to a server. Supported audio can be saved unchanged, or converted locally to M4A, MP3, or WAV.
 
-Current app version: **v1.0.0**.
+Current app version: **v1.0.5**.
 
 ## 🚀 Live demo
 
@@ -69,7 +69,7 @@ This wrapper restores the normal standalone HTML locally with `DecompressionStre
 6. Preview the result when the browser supports the generated audio format, then save it.
 7. Use **Change settings and extract again** to return to the Format section without replacing the source video.
 
-The filename field applies to the next extraction. Internal dots are preserved (`lecture.part1.mov` → `lecture.part1-audio.m4a`), and the output format adds the extension automatically. A completed result keeps its captured filename when you edit or reset this field. The reset action is unavailable during preparation or processing.
+The filename field applies to the next extraction. Internal dots are preserved (`lecture.part1.mov` → `lecture.part1-audio.m4a`), and the output format adds the extension automatically. A completed result keeps its captured filename when you edit or reset this field. Track, format, encoding settings and output filename cannot be edited during extraction; the settings and filename are captured when extraction starts. Changing language or saving does not restart audio preview. The result uses the selected track's duration when available, and updates to the output's actual duration when browser playback metadata is available.
 
 If you open a new video while a completed result has not been saved, the app asks before replacing it.
 
