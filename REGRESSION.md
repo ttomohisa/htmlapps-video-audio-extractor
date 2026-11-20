@@ -1,5 +1,11 @@
 # Video Audio Extractor regression checklist
 
+## v1.0.5 simplified filename row and summary inset
+
+- [x] Removed the redundant filename reset button and helper text on PC/mobile; name editing, automatic initial names, and completed-result protection are retained.
+- [x] Four audio metadata items have 16px left/right text insets on PC/mobile, including the 2-column mobile grid.
+- [x] New browser and synthetic-DOM tests cover the removed controls, inset, filename editing, processing lock, and retry.
+
 ## v1.0.5 compact intro spacing
 
 - [x] Mobile Chromium verifies that the introductory copy is within 16px of the header and the first workflow panel (8px design spacing, with text bounding-box tolerance).
@@ -223,19 +229,19 @@ The dedicated Builder profile browser smoke test covers:
 - [ ] Console shows no unexpected errors during the complete flow.
 
 
-## Next-run filename reset and dotted-name regressions
+## Next-run filename and dotted-name regressions
 
 `node scripts/test-output-filename.cjs [HTML path]` executes application functions and event bindings in a synthetic Node VM harness. With no path it tests `src/index.template.html`; the repository checker also runs readable, root, and restored self-extract output. It does not run a browser, decode media, or establish visual accessibility.
 
 Automated coverage:
 - Default multi-dot source names and custom dotted names survive repeated blur/extract/save.
-- Reset restores the current source stem plus `-audio`, focuses the field, and preserves track/format/quality/channels and preference boundaries.
-- Reset is disabled and guarded without usable input and during preparation/processing; cancellation/failure restore availability.
-- Reset/edit leave a completed result's captured filename and URL intact; successful retry uses the new draft and revokes only the superseded URL.
+- Source selection fills the basename with the source stem plus `-audio`; the separate reset button and helper text are absent in both languages.
+- The filename field is editable before extraction, locked during preparation/processing, and unlocked after cancel, success, or failure.
+- Editing a next-run name leaves the completed result's filename and URL intact; successful retry uses the edited draft and revokes only the superseded URL.
 - Path/control/invalid characters, empty/all-dot input, reserved device names with dot suffixes, Unicode and truncation boundaries stay safe and idempotent.
 - Actual selected stream index, WORKERFS, copy/M4A/MP3/WAV arguments, CSP and five-key preferences remain unchanged.
 
 Manual follow-up, not claimed by the automated suite:
-- [ ] Keyboard Enter/Space activation, visible focus, and correct field focus after reset.
-- [ ] Japanese/English at desktop and 320 px widths, including long names and helper text.
+- [ ] Filename field focus, input, and automatic source-based initial value with keyboard navigation.
+- [ ] Japanese/English at desktop and 320 px widths, including long output names and metadata text inset.
 - [ ] Real media extraction/download in all output modes and direct `file://` use in supported browsers.
