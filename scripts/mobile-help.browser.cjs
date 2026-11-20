@@ -21,6 +21,8 @@ async function smoke(page,results,file){
    return await new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.readAsDataURL(new Blob(chunks,{type:'video/webm'}));});
  });
  await page.locator('#fileInput').setInputFiles({name:'synthetic-video.webm',mimeType:'video/webm',buffer:Buffer.from(encoded.split(',')[1],'base64')});await page.waitForFunction(()=>!document.querySelector('#extractButton').disabled,null,{timeout:60000});
+ assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('has-source')),true,'selected video activates compact intro');
+ assert.equal(await page.locator('.page-intro p').isVisible(),false,'mobile description disappears after choosing video');
  await page.locator('#outputFilename').fill('mobile-help-audio');await page.locator('#extractButton').click();await page.waitForFunction(()=>!document.querySelector('#saveButton').disabled,null,{timeout:60000});
  const pending=page.waitForEvent('download');await page.locator('#saveButton').click();const download=await pending;assert.equal(download.suggestedFilename(),'mobile-help-audio.opus');const target=path.join(results,file.includes('self-extract')?'synthetic-loader.opus':'synthetic-readable.opus');await download.saveAs(target);const bytes=fs.readFileSync(target);assert.ok(bytes.length>100);assert.equal(bytes.subarray(0,4).toString(),'OggS');
  const duration=await page.evaluate(async encoded=>{const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));const context=new AudioContext();try{return(await context.decodeAudioData(bytes.buffer)).duration;}finally{await context.close();}},bytes.toString('base64'));assert.ok(duration>0&&duration<5);
@@ -79,6 +81,10 @@ async function main() {
             assert.equal(await page.locator('html').getAttribute('lang'),language,label+': repeated language toggles');
             for(const id of ["buildVersion", "coreVersion"]){assert.equal(await page.locator('#'+id).count(),1,label+': unique metadata after toggles');assert.ok(!['','—','-'].includes((await page.locator('#'+id).textContent()).trim()),label+': populated metadata after toggles');}
             assert.equal(await page.locator('[data-i18n="localBadge"]').textContent(), language === 'en' ? 'Fully local processing' : '完全ローカル処理', label);
+            assert.equal(await page.locator('.local-badge').isVisible(),width>560,label+': fully local label only shown on desktop');
+            assert.equal(await page.locator('.page-intro p').isVisible(),true,label+': initial description visible before choosing a video');
+            assert.equal(await page.locator('#dropZone .drop-icon svg').count(),1,label+': download tray icon');
+            assert.ok(await page.locator('#dropZone .drop-icon svg').evaluate(svg=>[...svg.querySelectorAll('path')].some(path=>path.getAttribute('d')==='M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3')),label+': reference tray geometry');
             assert.ok(await page.locator('.local-badge').evaluate(el => {
               const box = el.getBoundingClientRect();
               const range = document.createRange();
@@ -97,7 +103,9 @@ async function main() {
         await page.locator('#helpButton').click();
         const visibleHelpText = await page.locator('#helpDialog').innerText();
         assert.doesNotMatch(visibleHelpText, /(?:EN\s*\/\s*JA|JA\s*[\/／]\s*EN|ヘッダーのEN|Use EN in the header)/, label + ': redundant language instructions removed');
-        assert.match(visibleHelpText, language === 'ja' ? /確認を閉じても作成済み音声は残ります/ : /dismissing a confirmation keeps existing audio/i, label + ': useful adjacent Help guidance retained');
+        assert.doesNotMatch(visibleHelpText, /(?:ヘルプや確認画面は閉じるボタン|dismissing a confirmation keeps existing audio|Dismiss Help or confirmations)/i, label+': redundant modal instructions removed');
+        assert.match(visibleHelpText, language === 'ja' ? /音声のない動画からは取り出せません/ : /Videos without audio cannot be extracted/, label+': useful audio limitation');
+        assert.match(visibleHelpText, language === 'ja' ? /プレビューできない形式でも保存できます/ : /You can save even if preview is unavailable/, label+': useful download guidance');
 
             const body = page.locator('#helpDialog > .dialog-body');
             assert.ok(await body.evaluate(el => el.lastElementChild.contains(document.querySelector('#buildVersion'))), label + ': build is final body child');
