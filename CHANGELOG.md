@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.5] - 2026-11-20
+
+### Fixed
+- Preserve current audio preview position and unsupported-preview state during language changes, saving, and result updates.
+- Re-translate source errors, processing failures, cancellations, and preview warnings when switching between Japanese and English.
+- Prefer the selected audio track's duration for estimates/results and update the result with actual playback metadata when available.
+- Capture output filename, bitrate, and channel settings at extraction start; lock editing while preparing or processing.
+- Add regression coverage for both standalone variants and synchronize the Japanese/English READMEs with v1.0.5.
+
+
 ## 1.0.4 - 2026-10-27
 
 - Remove redundant language-switching instructions from Japanese and English Help. Preserve the adjacent state-retention, accessibility, and dialog guidance where present.
