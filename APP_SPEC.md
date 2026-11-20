@@ -29,6 +29,15 @@ Primary users include people extracting audio from phone videos, meetings, lectu
 
 Codec expertise is not assumed.
 
+## v1.1.0 — Waveform-guided time-range selection
+
+- Choose **Set a time range**, then **Show waveform**. The load is explicit because the embedded WASM decodes the selected track into WAV.
+- The waveform displays local PCM sample peaks. Play/pause, click/tap seeking, a moving playhead, a time readout, start/end at the playback position and draggable handles are available. Keyboard arrows, Home/End and Shift+arrows adjust the sliders; manual time fields stay in sync.
+- Use a simple layout with 8px spacing on both desktop and narrow mobile viewports; do not add unnecessary card borders.
+- Reuse the preview WAV for edited export instead of decoding twice. Bind the cache to source generation and selected track; abort pending decoding and revoke Blob URLs on source/track replacement or leaving range mode.
+- Prevent concurrent extraction and preview preparation. If preview loading fails or is canceled, manual time entry remains available.
+- Process files in the browser with no additional network use. Real iPhone/Android and long recordings still require device validation.
+
 ## v1.1.0 — WAV-based time-range and volume editing
 
 - The Format step allows an optional Start/End time (`seconds`, `m:ss`, `h:mm:ss`, with fractional seconds) and a gain preset (-12 / -6 / +3 / +6 dB) or **peak normalization to -1 dBFS**. A blank End means the end of the track. Validate before starting and keep an error near the fields for invalid or unknown duration.
