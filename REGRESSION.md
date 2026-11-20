@@ -1,5 +1,18 @@
 # Video Audio Extractor regression checklist
 
+## v1.0.5 eight-point spacing and quiet cards
+
+Automated source/build regression:
+
+- [x] Every authored CSS padding, margin and gap value is on the 8px spacing grid, including responsive overrides, except browser-controlled safe-area insets (not fixed pixel values).
+- [x] No visible h1 remains in the intro; a visually hidden semantic h1 is retained for accessibility.
+- [x] The main panels have a subtle single border, no shadow, and 8px corners; selected track and format states remain visible.
+- [x] The entire introductory area is removed from the mobile workflow after a video is accepted.
+
+Manual layout review:
+
+- [ ] Inspect PC and smartphone screenshots for rhythm of space, subdued card appearance, and appropriate hierarchy without the hero heading.
+
 ## v1.0.5 UI and release integration
 
 Automated Chromium smoke (including 320px, 360px, 390px, tablet-width and desktop; both UI languages):
