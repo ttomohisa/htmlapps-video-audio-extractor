@@ -1,5 +1,24 @@
 # Video Audio Extractor regression checklist
 
+## v1.1.0 local time-range and gain/peak normalization
+
+Automated checks:
+
+- [x] Parse seconds, m:ss, h:mm:ss, fractions; reject malformed or reversed/empty ranges.
+- [x] Generate valid PCM16 WAV after sample-accurate range slicing and a fixed gain change; preserve original source samples.
+- [x] Peak-normalize a synthetic PCM waveform to approximately -1 dBFS without clipping/silence division errors.
+- [x] Enforce known source duration, mono/stereo input and size cap before editing.
+- [x] Switch editing output to WAV and disable stream-copy/M4A/MP3 only while edits are active.
+- [x] Run actual local Chromium WAV trim/normalize/save smoke on the embedded runtime, verify RIFF/WAVE header, decoded output length, no external runtime requests, and retain existing plain Opus extraction.
+
+Manual follow-up:
+
+- [ ] Android and iOS phones: test duration validation, keyboard, navigation, memory warning, cancel and large input.
+- [ ] Real music and speech: verify fixed gain/clipping, peak normalization and very short segments.
+- [ ] Long recordings and multichannel formats: verify graceful documented rejection.
+
+
+
 ## v1.0.5 grouped encoding and estimated size
 
 - [x] Keep `methodSummary` and `outputEstimate` together in the same `output-facts` group, separate from the filename input, before Extract audio.
