@@ -31,16 +31,16 @@ Codec expertise is not assumed.
 
 ## v1.1.0 — Waveform-guided time-range selection
 
-- Choose **Set a time range**, then **Show waveform**. The load is explicit because the embedded WASM decodes the selected track into WAV.
+- Choosing **Set a time range** immediately starts the local waveform preparation; there is no extra Show waveform step. Loading status and cancel action remain available, and Reload waveform is offered only after failure/cancellation. The embedded WASM decodes the selected track to WAV.
 - The waveform displays local PCM sample peaks. Play/pause, click/tap seeking, a moving playhead, a time readout, start/end at the playback position and draggable handles are available. Keyboard arrows, Home/End and Shift+arrows adjust the sliders; manual time fields stay in sync.
-- Use a simple layout with 8px spacing on both desktop and narrow mobile viewports; do not add unnecessary card borders.
+- Use a simple layout with 8px spacing on both desktop and narrow mobile viewports; do not add unnecessary card borders. Do not show explanatory text under the waveform or beneath the time inputs: the labels and controls should suffice. Keep the introductory paragraph near the header without extra top padding.
 - Reuse the preview WAV for edited export instead of decoding twice. Bind the cache to source generation and selected track; abort pending decoding and revoke Blob URLs on source/track replacement or leaving range mode.
 - Prevent concurrent extraction and preview preparation. If preview loading fails or is canceled, manual time entry remains available.
 - Process files in the browser with no additional network use. Real iPhone/Android and long recordings still require device validation.
 
 ## v1.1.0 — WAV-based time-range and volume editing
 
-- The Format step allows an optional Start/End time (`seconds`, `m:ss`, `h:mm:ss`, with fractional seconds) and a gain preset (-12 / -6 / +3 / +6 dB) or **peak normalization to -1 dBFS**. A blank End means the end of the track. Validate before starting and keep an error near the fields for invalid or unknown duration.
+- The Format step allows an optional Start/End time (`seconds`, `m:ss`, `h:mm:ss`, with fractional seconds) and a gain preset (-12 / -6 / +3 / +6 dB) or **peak normalization to -1 dBFS**. Initially prefill End from the selected audio track's duration, falling back to the container duration when needed. Refresh the default from the actual decoded WAV length only while End remains untouched; preserve manually edited/dragged values. A blank End still means the end of the track. Validate before starting and keep an error near the fields for invalid or unknown duration.
 - With either edit enabled, select WAV output and disable stream-copy and other lossy output choices. Do not silently describe the operation as no re-encoding. Switching edits off leaves ordinary stream copy and M4A/MP3/WAV conversion available.
 - The pinned Builder runner has no packet seek, audio filters or direct trimming options. Therefore the first (and only) FFmpeg pass converts the full selected audio track to PCM16 WAV using the current WORKERFS-mounted source; JavaScript then parses WAV chunks, slices precise PCM frames, applies fixed dB gain with int16 saturation or performs a two-pass peak scan targeting -1 dBFS, and builds a new WAV header. No CDN or remote API is involved.
 - Safety limit for this editing path: audio track duration must be known, channel count 1 or 2, sample rate known; estimated temporary PCM size must fit 128 MiB on mobile ≤560px or 256 MiB on desktop. The entire original selected track is decoded even when requesting a small range, which can make long recordings unavailable for edits. This restriction does not apply to the existing no-edit extraction/convert paths.
