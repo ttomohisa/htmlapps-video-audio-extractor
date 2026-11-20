@@ -152,8 +152,8 @@ async function main() {
             assert.equal(await page.locator('[data-i18n="localBadge"]').textContent(), language === 'en' ? 'Fully local processing' : '完全ローカル処理', label);
             assert.equal(await page.locator('.local-badge').isVisible(),width>560,label+': fully local label only shown on desktop');
             assert.equal(await page.locator('.page-intro p').isVisible(),true,label+': initial description visible before choosing a video');
-            assert.equal(await page.locator('main').evaluate(el=>getComputedStyle(el).paddingTop),'0px',label+': remove unnecessary space above intro');
-            assert.ok(await page.evaluate(()=>document.querySelector('.page-intro p').getBoundingClientRect().top-document.querySelector('.app-header').getBoundingClientRect().bottom<=8),label+': intro text near header');
+            assert.equal(await page.locator('main').evaluate(el=>getComputedStyle(el).paddingTop),'8px',label+': balanced eight-pixel space above intro');
+            assert.ok(await page.evaluate(()=>{const gap=document.querySelector('.page-intro p').getBoundingClientRect().top-document.querySelector('.app-header').getBoundingClientRect().bottom;return gap>=8&&gap<=16}),label+': balanced intro space below header');
             assert.equal(await page.locator('#trimHint').count(),0,label+': no time-format hint');
             assert.equal(await page.locator('[data-i18n="waveHint"]').count(),0,label+': no redundant waveform hint');
             if (width <= 560) {
@@ -201,6 +201,7 @@ async function main() {
             assert.equal(await page.locator('main > h1.sr-only').count(),1,label+': retained semantic page heading');
             assert.ok(await page.locator('#videoPanel').evaluate(el=>getComputedStyle(el).boxShadow==='none'&&getComputedStyle(el).borderRadius==='8px'),label+': quiet workflow panel styling');
             assert.equal(await page.locator('#dropZone .drop-icon svg').count(),1,label+': download tray icon');
+            assert.ok(await page.locator('#dropZone .drop-icon').evaluate(el=>{const c=getComputedStyle(el);return c.borderTopWidth==='0px'&&c.backgroundColor==='rgba(0, 0, 0, 0)'&&c.boxShadow==='none'}),label+': tray icon has no frame or background');
             assert.ok(await page.locator('#dropZone .drop-icon svg').evaluate(svg=>[...svg.querySelectorAll('path')].some(path=>path.getAttribute('d')==='M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3')),label+': reference tray geometry');
             assert.ok(await page.locator('.local-badge').evaluate(el => {
               const box = el.getBoundingClientRect();
@@ -221,8 +222,12 @@ async function main() {
         const visibleHelpText = await page.locator('#helpDialog').innerText();
         assert.doesNotMatch(visibleHelpText, /(?:EN\s*\/\s*JA|JA\s*[\/／]\s*EN|ヘッダーのEN|Use EN in the header)/, label + ': redundant language instructions removed');
         assert.doesNotMatch(visibleHelpText, /(?:ヘルプや確認画面は閉じるボタン|dismissing a confirmation keeps existing audio|Dismiss Help or confirmations)/i, label+': redundant modal instructions removed');
-        assert.match(visibleHelpText, language === 'ja' ? /音声のない動画からは取り出せません/ : /Videos without audio cannot be extracted/, label+': useful audio limitation');
-        assert.match(visibleHelpText, language === 'ja' ? /プレビューできない形式でも保存できます/ : /You can save even if preview is unavailable/, label+': useful download guidance');
+        assert.match(visibleHelpText, language === 'ja' ? /音声がない動画からは抽出できません/ : /Videos without audio cannot be extracted/, label+': useful audio limitation retained in supported scope');
+        assert.match(visibleHelpText, language === 'ja' ? /プレビューできない形式でも、作成した音声は保存できます/ : /You can still save generated audio if preview is unavailable/, label+': useful download guidance retained in scope');
+        const basics=page.locator('#helpDialog .dialog-body > ul > li');
+        assert.equal(await basics.count(),3,label+': three concise basic steps');
+        for(const item of await basics.all()){assert.ok((await item.innerText()).length<=90,label+': short, readable basic step')}
+        assert.match(visibleHelpText, language==='ja'?/「音声を取り出す」を押し、完了したら保存します/:/Choose Extract audio, then save the finished file/,label+': finishing action is clear');
 
             const body = page.locator('#helpDialog > .dialog-body');
             assert.ok(await body.evaluate(el => el.lastElementChild.contains(document.querySelector('#buildVersion'))), label + ': build is final body child');
