@@ -3,6 +3,8 @@
 ## [1.0.5] - 2026-11-20
 
 ### Improved UI and release workflow
+- Group the selected encoding method (`PCM 16bit`, MP3 bitrate, etc.) with the approximate output size immediately ahead of Extract audio on desktop and smartphone, rather than splitting these facts between the filename row and action row.
+- Add bilingual accessible labeling and layout checks for the grouped facts, preserving size recalculation and small-screen behavior.
 - Remove the redundant filename reset button and its helper text, while retaining editable prefilled filenames and stable completed results.
 - Add 16px horizontal padding to each audio metadata field on desktop and smartphone, keeping separators and the 8px spacing system.
 - Update filename regressions and add Chromium checks for the simplified filename UI and metadata insets.
