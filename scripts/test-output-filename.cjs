@@ -373,6 +373,52 @@ test('peak normalization reaches -1 dBFS and rejects invalid or oversize ranges'
   assert.equal(h.context.editConfiguration(tr).error,'editTooLarge');
 });
 
+
+test('silent peak normalization remains silence, even across stereo channels',async()=>{
+  const h=harness(),source=syntheticWav(8000,2,0.4,0);
+  const done=await h.context.editWavPcm16(source,{start:0,end:.4,gain:'normalize',maxBytes:1e7},null);
+  assert.equal(done.duration,.4);
+  const bytes=done.data,view=new DataView(bytes.buffer);
+  assert.equal(view.getUint16(22,true),2);
+  assert.equal(view.getUint32(40,true),8000*.4*4);
+  assert.equal(view.getInt16(44,true),0);
+  assert.equal(view.getInt16(bytes.length-2,true),0);
+});
+
+test('positive gain clips safely at PCM16 bounds without wrapping',async()=>{
+  const h=harness(),source=syntheticWav(8000,2,.2,25000);
+  const edited=await h.context.editWavPcm16(source,{start:0,end:.2,gain:'6',maxBytes:1e7},null);
+  const view=new DataView(edited.data.buffer);
+  assert.equal(view.getInt16(44,true),32767);
+  assert.equal(view.getInt16(46,true),32767);
+  assert.equal(new DataView(source.buffer).getInt16(44,true),25000,'original unchanged');
+});
+
+test('PCM editing rejects malformed and over-budget files, and respects cancellation',async()=>{
+  const h=harness();
+  await assert.rejects(h.context.editWavPcm16(new Uint8Array(44),{start:0,end:.2,gain:'none',maxBytes:1e7},null),/WAV|header|chunk|PCM/i);
+  await assert.rejects(h.context.editWavPcm16(syntheticWav(),{start:0,end:1,gain:'none',maxBytes:3},null),/memory limit/i);
+  const controller=new AbortController();controller.abort();
+  await assert.rejects(h.context.editWavPcm16(syntheticWav(),{start:0,end:1,gain:'normalize',maxBytes:1e7},controller.signal),e=>e?.name==='AbortError');
+  const done=await h.context.editWavPcm16(syntheticWav(8000,1,.2,100),{start:.05,end:.1,gain:'none',maxBytes:1e7},null);
+  assert.ok(Math.abs(done.duration-.05)<1e-8);
+  assert.equal(done.data.length,44+800,'short boundary output');
+});
+
+test('the cached editing path switches progress to determinate and reaches 100%',async()=>{
+  const h=harness();await h.load('meeting.mov');
+  const tr=h.state.report.audioStreams.find(x=>x.index===7);
+  tr.channels=1;tr.sampleRate=8000;
+  const progress=h.element('#progressTrack');
+  const removed=[];progress.classList.remove=x=>removed.push(x);
+  h.state.wavePreview={data:syntheticWav(),url:'blob:wave-preview',duration:2,trackIndex:tr.index,generation:h.state.generation,rate:8000,peaks:new Float32Array(640)};
+  h.state.trimMode='range';h.element('#trimStart').value='0:00.1';h.element('#trimEnd').value='0:00.6';
+  h.context.renderFormat();await h.context.extract();
+  assert.ok(removed.includes('indeterminate'),'WAV PCM pass must leave indeterminate mode');
+  assert.equal(h.element('#progressBar').style.width,'100%','cached editing reaches 100%');
+  assert.equal(progress.attributes['aria-valuenow'],'100');
+});
+
 test('runtime privacy and preference boundaries remain unchanged',()=>{
   assert.match(html,/connect-src 'none'/);assert.match(html,/workerfs:true/);assert.doesNotMatch(functions,/\.arrayBuffer\(/);
   const keys=vm.runInNewContext('('+html.match(/const storageKeys=(\{[^\n]+\});/)[1]+')');assert.equal(Object.keys(keys).length,5);
