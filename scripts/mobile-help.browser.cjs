@@ -83,6 +83,16 @@ async function main() {
             assert.equal(await page.locator('[data-i18n="localBadge"]').textContent(), language === 'en' ? 'Fully local processing' : '完全ローカル処理', label);
             assert.equal(await page.locator('.local-badge').isVisible(),width>560,label+': fully local label only shown on desktop');
             assert.equal(await page.locator('.page-intro p').isVisible(),true,label+': initial description visible before choosing a video');
+            if (width <= 560) {
+              const heroSpacing = await page.evaluate(() => {
+                const header = document.querySelector('.app-header').getBoundingClientRect();
+                const paragraph = document.querySelector('.page-intro p').getBoundingClientRect();
+                const panel = document.querySelector('#videoPanel').getBoundingClientRect();
+                return { top: paragraph.top - header.bottom, bottom: panel.top - paragraph.bottom };
+              });
+              assert.ok(heroSpacing.top >= 0 && heroSpacing.top <= 16, label + ': intro sits close below header: ' + JSON.stringify(heroSpacing));
+              assert.ok(heroSpacing.bottom >= 0 && heroSpacing.bottom <= 16, label + ': intro sits close above first panel: ' + JSON.stringify(heroSpacing));
+            }
             assert.equal(await page.locator('.page-intro h1').count(),0,label+': no visible hero title element');
             assert.equal(await page.locator('main > h1.sr-only').count(),1,label+': retained semantic page heading');
             assert.ok(await page.locator('#videoPanel').evaluate(el=>getComputedStyle(el).boxShadow==='none'&&getComputedStyle(el).borderRadius==='8px'),label+': quiet workflow panel styling');
