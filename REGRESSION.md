@@ -1,11 +1,18 @@
 # Video Audio Extractor regression checklist
 
+## v1.1.0 balanced intro, icon and simplified Help
+
+- [x] Introductory text begins with 8px top spacing on PC/mobile instead of zero padding; remains hidden after source selection on mobile.
+- [x] Download-tray icon remains visible at 40px, with no icon background, border or shadow; drop-area outline stays in place.
+- [x] Help Basics has three concise bilingual steps. Source/no-audio and preview-save caveats remain documented in Supported scope.
+- [x] Browser test covers page geometry, icon styling and full Help reachability at narrow widths.
+
 ## v1.1.0 simplified range and waveform UX
 
 - [x] A loaded source presets End to the selected audio track's duration; on a different track the default updates.
 - [x] Choosing Set a time range immediately starts waveform preparation, without a separate Show waveform step; a retry control is reserved for failed or canceled loading.
 - [x] The preview's decoded duration replaces the untouched initial End, but manually selected end markers and typed times are preserved.
-- [x] No obsolete waveform/time hint remains in Japanese/English, and the intro paragraph has no extra top padding on PC/mobile.
+- [x] No obsolete waveform/time hint remains in Japanese/English, and the intro uses a balanced 8px top gap on PC/mobile.
 
 ## v1.1.0 waveform-assisted selection
 
