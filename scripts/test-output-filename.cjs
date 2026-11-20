@@ -346,11 +346,12 @@ test('switching source invalidates a pending waveform and discards late PCM data
   const wave=h.context.loadWavePreview();
   for(let i=0;i<10&&!pending;i++)await new Promise(resolve=>setTimeout(resolve,0));
   assert.ok(pending,'wave runner started');
-  const promise=h.load('second.mov');
-  assert.equal(pending.options.signal.aborted,true,'old waveform worker aborted');
-  pending.resolve({files:[{name:pending.options.outputs[0],data:syntheticWav()}]});
-  await wave;
+  const oldPending=pending;
   h.setRun(async options=>({files:[{name:options.outputs[0],data:syntheticWav()}]}));
+  const promise=h.load('second.mov');
+  assert.equal(oldPending.options.signal.aborted,true,'old waveform worker aborted');
+  oldPending.resolve({files:[{name:oldPending.options.outputs[0],data:syntheticWav()}]});
+  await wave;
   await promise;
   assert.equal(h.state.wavePreview,null,'old source cannot set new waveform');
   assert.equal(h.state.trimMode,'full','new source starts without stale trim setting');
