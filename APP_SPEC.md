@@ -466,11 +466,18 @@ Prefer reliable completion of one task over adding features.
 - If resizing hides or removes the confirmation opener, return focus to the active visible mobile tab, or the visible Help button as a final fallback, without switching pages or changing media state.
 - The narrow header wraps its complete localized name and version while retaining the language and Help controls. Preserve the existing decorative shared shield and canonical app artwork.
 
+## v1.0.5 8px spacing and restrained card hierarchy
+
+- Use an 8px visual spacing scale for CSS margins, padding and gaps (0, 8, 16, 24, 32px, etc.) in desktop/mobile and dialogs; preserve minimum tap target sizes, border widths, and native safe-area insets separately.
+- Remove the visible hero heading while preserving an accessible h1 in the document outline. The remaining description and desktop local-processing badge share a compact row. On mobile, collapse the entire intro after a video is chosen.
+- Keep panels as quiet boundary markers: no box shadows, light separators, an 8px corner radius, and subtle selected-track/format accents rather than filled cards.
+- Verify structural/spacing constraints in source, readable, root, and self-extract builds, and browser geometry at narrow viewport sizes.
+
 ## v1.0.5 compact UI and post-merge release
 
 - Keep the major workflow panels recognizable on desktop/mobile, but replace nested card borders around audio metadata, format options, settings, preview metadata and source selection with spacing, separators and selected-state emphasis.
 - Use the same down-arrow-to-tray SVG motif as PDF Fill & Sign for the video drop zone. Do not change the canonical favicon/brand icon.
-- Hide the informational fully-local-processing badge at the mobile page-tab breakpoint (560px). Once a source file is accepted, hide the introductory description beneath the hero title on mobile; leave the title and desktop description intact.
+- Hide the informational fully-local-processing badge at the mobile page-tab breakpoint (560px). The hero has no visible title: retain only a screen-reader-accessible h1 for document structure. Show its short explanatory paragraph initially and on desktop; once a source file is accepted, collapse the entire hero on mobile.
 - Help Basics must explain how to choose a video/track, the distinction between unchanged extraction and conversion, and how to save when preview is unavailable. Remove nonessential instructions about how to dismiss dialogs. Keep functional Esc/backdrop/Close support.
 - On a merged PR into main, validate/build the production one-file artifacts, then create an immutable v<version> tag and GitHub Release with readable and self-extract HTML assets. Do not create duplicate releases for a previously published version.
 
