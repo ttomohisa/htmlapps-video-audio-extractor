@@ -1,5 +1,24 @@
 # Video Audio Extractor regression checklist
 
+## v1.0.5 preview, localization and settings
+
+Automated (source, readable build, root copy and restored self-extract):
+
+- [x] Re-rendering result, switching language and saving do not reload the active audio source or reset the playback position in the synthetic DOM harness.
+- [x] Unsupported-preview warning remains hidden/visible as appropriate and changes language with the UI.
+- [x] Source errors, processing errors and cancellation notices follow language changes.
+- [x] Selected-track duration takes priority over container duration; loaded audio metadata can correct the result duration.
+- [x] Processing snapshots the filename and MP3 bitrate/channel choice before asynchronous setup; editable settings are disabled during preparation and processing.
+
+Manual follow-up (not represented by synthetic tests):
+
+- [ ] Desktop Chrome/Edge: play extracted audio, toggle language and request save while playback continues; verify elapsed position is unchanged.
+- [ ] Mobile Android Chrome: verify unsupported-preview warning, error-language switching, and result playback controls.
+- [ ] Multi-audio video with a shorter selected track: verify result duration and estimated size in M4A/MP3/WAV and stream-copy modes.
+- [ ] Long MP3/M4A transcode: verify controls lock during preparation/processing, cancel/retry restores controls and prior result, and source replacement remains possible.
+- [ ] Direct `file://` opening of both generated variants and DevTools network capture (no runtime external requests).
+
+
 ## v0.3.0 automated / fixture coverage
 
 The dedicated Builder profile browser smoke test covers:
