@@ -34,11 +34,16 @@ async function smoke(page,results,file){
  // The existing embedded core decodes the audio to PCM WAV. Browser-local
  // trimming and peak normalization then operate without any external requests.
  await page.locator('.mobile-tab[data-page="format"]').click();
+ const initialEnd=await page.locator('#trimEnd').inputValue();
+ assert.match(initialEnd,/^\d+:\d\d(?:\.\d+)?$/,'end time is pre-filled from the selected audio duration');
+ assert.equal(await page.locator('#trimHint').count(),0,'redundant time format note removed');
+ assert.equal(await page.locator('[data-i18n="waveHint"]').count(),0,'redundant waveform gesture note removed');
  await page.locator('#trimMode').selectOption('range');
- assert.equal(await page.locator('#waveLoadButton').isVisible(),true,'waveform load is available in range mode');
- await page.locator('#waveLoadButton').click();
+ assert.equal(await page.locator('#waveLoadButton').isVisible(),false,'waveform starts automatically without a Show waveform button');
  await page.waitForFunction(()=>{const ready=document.querySelector('#waveReady');const canvas=document.querySelector('#waveCanvas');return ready&&!ready.hidden&&canvas.width>0;},null,{timeout:60000});
- assert.equal(await page.locator('#waveLoadButton').isVisible(),false,'waveform preparation is reused');
+ assert.equal(await page.locator('#waveLoadButton').isVisible(),false,'retry button hidden when waveform is ready');
+ const decodedEnd=await page.evaluate(()=>({end:parseAudioTime(document.querySelector('#trimEnd').value),actual:state.wavePreview?.duration}));
+ assert.ok(Math.abs(decodedEnd.end-decodedEnd.actual)<.03,'default end matches decoded audio duration: '+JSON.stringify(decodedEnd));
  const wavCanvas=await page.locator('#waveCanvas').evaluate(el=>{const pixels=el.getContext('2d').getImageData(0,0,el.width,el.height).data;return{width:el.width,hasBars:pixels.some((v,i)=>i%4===3&&v>0)};});
  assert.ok(wavCanvas.width>=200&&wavCanvas.hasBars,'actual waveform contains sampled PCM peaks');
  await page.locator('#wavePlayButton').click();
@@ -147,6 +152,10 @@ async function main() {
             assert.equal(await page.locator('[data-i18n="localBadge"]').textContent(), language === 'en' ? 'Fully local processing' : '完全ローカル処理', label);
             assert.equal(await page.locator('.local-badge').isVisible(),width>560,label+': fully local label only shown on desktop');
             assert.equal(await page.locator('.page-intro p').isVisible(),true,label+': initial description visible before choosing a video');
+            assert.equal(await page.locator('main').evaluate(el=>getComputedStyle(el).paddingTop),'0px',label+': remove unnecessary space above intro');
+            assert.ok(await page.evaluate(()=>document.querySelector('.page-intro p').getBoundingClientRect().top-document.querySelector('.app-header').getBoundingClientRect().bottom<=8),label+': intro text near header');
+            assert.equal(await page.locator('#trimHint').count(),0,label+': no time-format hint');
+            assert.equal(await page.locator('[data-i18n="waveHint"]').count(),0,label+': no redundant waveform hint');
             if (width <= 560) {
               const heroSpacing = await page.evaluate(() => {
                 const header = document.querySelector('.app-header').getBoundingClientRect();
