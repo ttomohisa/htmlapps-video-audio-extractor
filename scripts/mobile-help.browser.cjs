@@ -31,6 +31,39 @@ async function smoke(page,results,file){
  await page.locator('#outputFilename').fill('mobile-help-audio');await page.locator('#extractButton').click();await page.waitForFunction(()=>!document.querySelector('#saveButton').disabled,null,{timeout:60000});
  const pending=page.waitForEvent('download');await page.locator('#saveButton').click();const download=await pending;assert.equal(download.suggestedFilename(),'mobile-help-audio.opus');const target=path.join(results,file.includes('self-extract')?'synthetic-loader.opus':'synthetic-readable.opus');await download.saveAs(target);const bytes=fs.readFileSync(target);assert.ok(bytes.length>100);assert.equal(bytes.subarray(0,4).toString(),'OggS');
  const duration=await page.evaluate(async encoded=>{const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));const context=new AudioContext();try{return(await context.decodeAudioData(bytes.buffer)).duration;}finally{await context.close();}},bytes.toString('base64'));assert.ok(duration>0&&duration<5);
+ // The existing embedded core decodes the audio to PCM WAV. Browser-local
+ // trimming and peak normalization then operate without any external requests.
+ await page.locator('.mobile-tab[data-page="format"]').click();
+ await page.locator('#trimMode').selectOption('range');
+ await page.locator('#trimStart').fill('0:00.2');
+ await page.locator('#trimEnd').fill('0:00.7');
+ await page.locator('#gainMode').selectOption('normalize');
+ assert.equal(await page.locator('.format-choice[data-mode="copy"] input').isDisabled(),true,'copy is unavailable for edited audio');
+ assert.equal(await page.locator('.format-choice[data-mode="mp3"] input').isDisabled(),true,'editing is WAV-only');
+ assert.equal(await page.locator('.format-choice[data-mode="wav"] input').isChecked(),true,'edit visibly chooses WAV');
+ assert.equal(await page.locator('#editNote').isVisible(),true,'WAV limitation is explained');
+ assert.equal(await page.locator('#editError').isVisible(),false,'valid time range');
+ await page.locator('#outputFilename').fill('time-and-volume');
+ await page.locator('#extractButton').click();
+ await page.waitForFunction(()=>!document.querySelector('#saveButton').disabled&&document.querySelector('#resultFormat')?.textContent==='WAV',null,{timeout:60000});
+ const editedDuration=await page.locator('#resultDuration').textContent();
+ assert.match(editedDuration,/0:00|0:01/);
+ const pendingEdited=page.waitForEvent('download');
+ await page.locator('#saveButton').click();
+ const editedDownload=await pendingEdited;
+ assert.equal(editedDownload.suggestedFilename(),'time-and-volume.wav');
+ const editedPath=path.join(results,file.includes('self-extract')?'edited-self-extract.wav':'edited-readable.wav');
+ await editedDownload.saveAs(editedPath);
+ const editedBytes=fs.readFileSync(editedPath);
+ assert.equal(editedBytes.toString('ascii',0,4),'RIFF','valid PCM container');
+ assert.equal(editedBytes.toString('ascii',8,12),'WAVE','valid WAV header');
+ const editedSeconds=await page.evaluate(async encoded=>{
+   const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));
+   const ctx=new AudioContext();
+   try{return(await ctx.decodeAudioData(bytes.buffer)).duration;}finally{await ctx.close()}
+ },editedBytes.toString('base64'));
+ assert.ok(editedSeconds>=.4&&editedSeconds<=.6,'range length near 0.5 sec');
+ console.log('PASS generated Opus + WAV time trim and peak normalize '+file);
  console.log('PASS synthetic canvas/oscillator video to edited-name Opus and native audio decode '+file);
 }
 
