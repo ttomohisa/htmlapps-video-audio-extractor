@@ -313,6 +313,50 @@ test('source duration prefills End and toggling range prepares waveform without 
   assert.equal(h.state.wavePreview,null,'switching off range releases waveform');
 });
 
+
+test('cancelling an in-flight waveform load aborts its worker and allows retry',async()=>{
+  const h=harness();await h.load('first.mov');
+  const tr=h.state.report.audioStreams.find(x=>x.index===7);tr.channels=1;tr.sampleRate=8000;
+  h.state.trimMode='range';
+  let pending;
+  h.setRun(options=>new Promise(resolve=>{pending={resolve,options};}));
+  const first=h.context.loadWavePreview();
+  for(let i=0;i<10&&!pending;i++)await new Promise(resolve=>setTimeout(resolve,0));
+  assert.ok(pending,'wave runner started');
+  assert.equal(h.state.waveLoading,true);
+  h.context.cancelWaveLoad();
+  assert.equal(pending.options.signal.aborted,true,'worker cancellation signaled');
+  assert.equal(h.state.waveLoading,false);
+  assert.equal(h.state.waveErrorKey,'waveCancelled');
+  pending.resolve({files:[{name:pending.options.outputs[0],data:syntheticWav()}]});
+  await first;
+  assert.equal(h.state.wavePreview,null,'late waveform is discarded');
+  h.setRun(async options=>({files:[{name:options.outputs[0],data:syntheticWav()}]}));
+  await h.context.loadWavePreview();
+  assert.equal(h.state.wavePreview?.duration,2,'retry can load waveform');
+  assert.equal(h.state.waveErrorKey,null);
+});
+
+test('switching source invalidates a pending waveform and discards late PCM data',async()=>{
+  const h=harness();await h.load('first.mov');
+  const tr=h.state.report.audioStreams.find(x=>x.index===7);tr.channels=1;tr.sampleRate=8000;
+  h.state.trimMode='range';
+  let pending;
+  h.setRun(options=>new Promise(resolve=>{pending={resolve,options};}));
+  const wave=h.context.loadWavePreview();
+  for(let i=0;i<10&&!pending;i++)await new Promise(resolve=>setTimeout(resolve,0));
+  assert.ok(pending,'wave runner started');
+  const promise=h.load('second.mov');
+  assert.equal(pending.options.signal.aborted,true,'old waveform worker aborted');
+  pending.resolve({files:[{name:pending.options.outputs[0],data:syntheticWav()}]});
+  await wave;
+  h.setRun(async options=>({files:[{name:options.outputs[0],data:syntheticWav()}]}));
+  await promise;
+  assert.equal(h.state.wavePreview,null,'old source cannot set new waveform');
+  assert.equal(h.state.trimMode,'full','new source starts without stale trim setting');
+  assert.equal(h.element('#trimEnd').value,'0:02','new source end reset');
+});
+
 test('time entry accepts m:ss and h:mm:ss but rejects malformed input',()=>{
   const h=harness();
   assert.equal(h.context.parseAudioTime('5:00'),300);
