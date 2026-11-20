@@ -38,7 +38,7 @@ function harness() {
   let url = 0;
   const context = vm.createContext({state,$:element,$$:()=>[],Blob,File,AbortController,Uint8Array,Date,Number,Error,TypeError,
     console:{error(){}},matchMedia:()=>({matches:false}),URL:{createObjectURL:()=>`blob:synthetic-${++url}`,revokeObjectURL:u=>revoked.push(u)},
-    document:{body:{append(){}},createElement(tag){assert.equal(tag,'a');return {href:'',download:'',click(){downloads.push({href:this.href,name:this.download});},remove(){}};}},
+    document:{body:{append(){},classList:{add(){},remove(){}}},createElement(tag){assert.equal(tag,'a');return {href:'',download:'',click(){downloads.push({href:this.href,name:this.download});},remove(){}};}},
     BrowserFFmpeg:{videoAudioExtractorInspectArgs:x=>({kind:'inspect',...x}),videoAudioExtractorCopyArgs:x=>({kind:'copy',...x}),videoAudioExtractorTranscodeArgs:x=>({kind:'transcode',...x}),decodeJsonOutput:()=>currentReport},
     getRunner:()=>getRunner(),renderReport(){context.renderFormat();},renderResult(){},unlockTabs(){},setMobilePage(){},announce(){},showToast(){},setSourceError(){},clearAudioPreview(){},navigateToStep(){},
     bytesText:String,sourceFormatLabel:()=> 'MP4',t:s=>s,inspectErrorMessage:String,processErrorMessage:String,diagnosticText:String,
@@ -102,7 +102,7 @@ test('reset is a native bilingual action associated with the next-run field',()=
   const translations=vm.runInNewContext('('+translationCode+')');
   assert.deepEqual(Object.keys(translations.ja).sort(),Object.keys(translations.en).sort());
   assert.equal(translations.en.useVideoName,'Use video name');assert.equal(translations.ja.useVideoName,'動画名を使う');
-  assert.match(translations.en.filenameHelp,/next extraction/i);assert.match(translations.en.helpFilename,/completed/i);
+  assert.match(translations.en.filenameHelp,/next extraction/i);assert.match(translations.en.helpFilename,/preview is unavailable/i);
 });
 
 test('reset restores the current source default, focuses the field and leaves settings alone',async()=>{
