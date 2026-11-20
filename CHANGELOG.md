@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.0] - 2026-11-21
+
+### Added
+- Extract a selected time range using seconds, m:ss or h:mm:ss inputs, with an optional open-ended End time.
+- Adjust audio gain by -12, -6, +3 or +6 dB, or normalize the resulting WAV samples to approximately -1 dBFS peak.
+- Decode the selected track to a temporary PCM16 WAV through the already-embedded local WASM runner and process PCM samples locally. Edited audio saves as WAV only; ordinary no-edit stream copy and M4A/MP3/WAV conversion remain unchanged.
+- Use field-local errors and a memory-safety cap (128 MiB estimated temporary PCM on mobile, 256 MiB desktop), with documented known-duration and mono/stereo restrictions.
+- Add synthetic PCM regressions, browser WAV output/decoding tests, and bilingual instructions.
+
 ## [1.0.5] - 2026-11-20
 
 ### Improved UI and release workflow
