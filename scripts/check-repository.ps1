@@ -369,6 +369,12 @@ if ($LASTEXITCODE -ne 0) { throw "Source filename behavior regression failed." }
 $headerTestPath = Join-Path $Root "scripts\test-header.cjs"
 & node $headerTestPath
 if ($LASTEXITCODE -ne 0) { throw "Source header behavior regression failed." }
+$resultStateTestPath = Join-Path $Root "scripts\test-result-state.cjs"
+& node $resultStateTestPath
+if ($LASTEXITCODE -ne 0) { throw "Source result state regression failed." }
+$spacingTestPath = Join-Path $Root "scripts\test-spacing.cjs"
+& node $spacingTestPath
+if ($LASTEXITCODE -ne 0) { throw "Source 8px spacing and hero hierarchy regression failed." }
 
 $buildArguments = @{}
 if ($ForceDownload) { $buildArguments.ForceDownload = $true }
@@ -402,6 +408,10 @@ foreach ($filenameTestHtml in @($readableOutputPath, $rootHtmlPath, (Join-Path $
   if ($LASTEXITCODE -ne 0) { throw "Generated filename behavior regression failed: $filenameTestHtml" }
   & node $headerTestPath $filenameTestHtml
   if ($LASTEXITCODE -ne 0) { throw "Generated header behavior regression failed: $filenameTestHtml" }
+  & node $resultStateTestPath $filenameTestHtml
+  if ($LASTEXITCODE -ne 0) { throw "Generated result state regression failed: $filenameTestHtml" }
+  & node $spacingTestPath $filenameTestHtml
+  if ($LASTEXITCODE -ne 0) { throw "Generated spacing and hero regression failed: $filenameTestHtml" }
 }
 
 Write-Host "[OK] Repository-root HTML matches the readable standalone build: $rootHtmlPath" -ForegroundColor Green

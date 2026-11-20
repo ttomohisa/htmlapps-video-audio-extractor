@@ -10,7 +10,7 @@ The user-provided formal specification dated 2026-09-29 is authoritative. Browse
 - **Repository:** `ttomohisa/htmlapps-video-audio-extractor`
 - **Development version:** `0.1.0`
 - **First stable release:** `1.0.0`
-- **Current version:** `1.0.4`
+- **Current version:** `1.1.0`
 - **Base template:** htmlapps-template v1.3.0 or newer current template at development start
 - **FFmpeg base:** `ttomohisa/htmlapps-ffmpeg-wasm-builder`
 - **Builder profile:** `video-audio-extractor`
@@ -23,11 +23,36 @@ Extract audio contained in a video file entirely in the browser. The primary tas
 1. extract one selected audio stream without decoding/re-encoding when a tested safe container mapping exists;
 2. convert one selected audio stream to MP3, M4A/AAC, or WAV.
 
-The app is not a video editor and does not provide audio trimming/editing features. The intended flow is: choose video → choose audio track when needed → choose save method → create → preview when supported → save.
+The app is not a video editor. From v1.1.0 onward it supports optional time-range extraction and volume/peak normalization with a WAV-only PCM editing path. The main flow is: choose video → choose audio track when needed → choose save method and optional edits → create → preview when supported → save.
 
 Primary users include people extracting audio from phone videos, meetings, lectures, interviews, podcast/source material, multi-audio MP4/MOV/MKV files, and videos whose picture cannot be played natively by the browser.
 
 Codec expertise is not assumed.
+
+## v1.1.0 — Compact introductory spacing, file picker and Help
+
+- Retain an 8px gap above the introductory paragraph on desktop and mobile: removing all top space makes the copy appear cramped. Keep the current mobile behavior hiding the introduction after selecting a source.
+- The drop-area download-tray SVG is frameless, with no colored tile, border or background behind the icon. Retain the drop-area boundary, button and touch targets.
+- Help Basics is limited to three short steps: choose video/track; select an output method with optional time/volume changes; extract and save. Keep Japanese and English direct and parallel, without multi-sentence feature inventories or repeated modal instructions. The no-audio and save-without-preview caveats belong in Supported scope, not the Basics list. Privacy, stored preferences, offline support, codec details and version information remain unchanged.
+
+## v1.1.0 — Waveform-guided time-range selection
+
+- Choosing **Set a time range** immediately starts the local waveform preparation; there is no extra Show waveform step. Loading status and cancel action remain available, and Reload waveform is offered only after failure/cancellation. The embedded WASM decodes the selected track to WAV.
+- The waveform displays local PCM sample peaks. Play/pause, click/tap seeking, a moving playhead, a time readout, start/end at the playback position and draggable handles are available. Keyboard arrows, Home/End and Shift+arrows adjust the sliders; manual time fields stay in sync.
+- Use a simple layout with 8px spacing on both desktop and narrow mobile viewports; do not add unnecessary card borders. Do not show explanatory text under the waveform or beneath the time inputs: the labels and controls should suffice. Keep the introductory paragraph near the header without extra top padding.
+- Reuse the preview WAV for edited export instead of decoding twice. Bind the cache to source generation and selected track; abort pending decoding and revoke Blob URLs on source/track replacement or leaving range mode.
+- Prevent concurrent extraction and preview preparation. If preview loading fails or is canceled, manual time entry remains available.
+- Process files in the browser with no additional network use. Real iPhone/Android and long recordings still require device validation.
+
+## v1.1.0 — WAV-based time-range and volume editing
+
+- The Format step allows an optional Start/End time (`seconds`, `m:ss`, `h:mm:ss`, with fractional seconds) and a gain preset (-12 / -6 / +3 / +6 dB) or **peak normalization to -1 dBFS**. Initially prefill End from the selected audio track's duration, falling back to the container duration when needed. Refresh the default from the actual decoded WAV length only while End remains untouched; preserve manually edited/dragged values. A blank End still means the end of the track. Validate before starting and keep an error near the fields for invalid or unknown duration.
+- With either edit enabled, select WAV output and disable stream-copy and other lossy output choices. Do not silently describe the operation as no re-encoding. Switching edits off leaves ordinary stream copy and M4A/MP3/WAV conversion available.
+- The pinned Builder runner has no packet seek, audio filters or direct trimming options. Therefore the first (and only) FFmpeg pass converts the full selected audio track to PCM16 WAV using the current WORKERFS-mounted source; JavaScript then parses WAV chunks, slices precise PCM frames, applies fixed dB gain with int16 saturation or performs a two-pass peak scan targeting -1 dBFS, and builds a new WAV header. No CDN or remote API is involved.
+- Safety limit for this editing path: audio track duration must be known, channel count 1 or 2, sample rate known; estimated temporary PCM size must fit 128 MiB on mobile ≤560px or 256 MiB on desktop. The entire original selected track is decoded even when requesting a small range, which can make long recordings unavailable for edits. This restriction does not apply to the existing no-edit extraction/convert paths.
+- Peak normalization is **not** perceived-loudness/LUFS normalization or noise reduction. Fixed positive gain can clip; normalized output may amplify background noise. Empty/silent data must not divide by zero. A range must be nonempty, within the known source duration, and must not produce an output larger than the configured limit.
+- Snapshot edit settings before asynchronous processing; disable them during preparation/processing. Cancellation must abort both FFmpeg decoding and asynchronous chunked sample editing, leaving existing completed audio intact if a retry is cancelled/failed.
+- Keep the editable output filename, localized Help/controls, PC/mobile format flow and accessible form labels; translate dynamic errors after switching languages.
 
 ## 3. Core user flow and states
 
@@ -119,6 +144,8 @@ v1.0 option: `モノラルにする / Convert to mono`, default OFF, available o
 
 ## 6. Output filename and result
 
+Keep the generated audio metadata summary text inset at least 16px from each cell's left and right edges at both desktop and mobile breakpoints. Preserve the four visible fields (codec, bitrate, sample rate, channels), the vertical separators, and the existing 8px spacing scale.
+
 Filename is editable before save. Default:
 
 `<source-basename>-audio.<extension>`
@@ -127,11 +154,11 @@ Example: `meeting.mp4` → `meeting-audio.m4a`.
 
 Keep extension outside the editable basename field and manage it automatically. Sanitize invalid characters. Empty input falls back to a safe default.
 
-The basename belongs to the next extraction. **動画名を使う / Use video name** restores the selected video's basename plus `-audio` and focuses the editable field. It is disabled before a usable video is inspected and during preparation/processing, and does not change the selected track, format, quality, channels, preferences, or an existing completed result.
+The basename belongs to the next extraction. Choosing a source video automatically fills the field with its basename plus `-audio`. The field remains editable before extraction and is disabled during preparation/processing. Do not render a separate filename reset button or next-extraction helper row. Removing those controls must not alter track, format, quality, channel preferences, or any previously completed result.
 
-Remove only the source filename's final extension when deriving the default. Keep internal dots in both source-derived and user-entered basenames (`lecture.part1.mov` → `lecture.part1-audio.m4a`). Repeated blur, reset, extraction and save must not remove further segments. Sanitize path separators, Windows-invalid characters, control characters, trailing spaces/dots, and reserved device names even before a dot (`CON.v2` → `CON-file.v2`). Keep the existing 110 UTF-16 code-unit basename limit without splitting a surrogate pair; source defaults reserve six characters for `-audio`. Empty/all-dot input falls back to `audio`. The format-owned extension is separate from the editable basename, including when the user types a dot suffix.
+Remove only the source filename's final extension when deriving the default. Keep internal dots in both source-derived and user-entered basenames (`lecture.part1.mov` → `lecture.part1-audio.m4a`). Repeated blur, extraction and save must not remove further segments. Sanitize path separators, Windows-invalid characters, control characters, trailing spaces/dots, and reserved device names even before a dot (`CON.v2` → `CON-file.v2`). Keep the existing 110 UTF-16 code-unit basename limit without splitting a surrogate pair; source defaults reserve six characters for `-audio`. Empty/all-dot input falls back to `audio`. The format-owned extension is separate from the editable basename, including when the user types a dot suffix.
 
-A completed result retains the filename captured when it was created and its Blob URL. Editing/resetting the next-run field does not rename that result; a successful new extraction captures the new name. Failed or cancelled retries preserve the previous result.
+A completed result retains the filename captured when it was created and its Blob URL. Editing the next-run field does not rename that result; a successful new extraction captures the new name. Failed or cancelled retries preserve the previous result.
 
 Success state includes format, duration, size, preview if the browser can play the generated audio, and an explicit save action such as `M4Aを保存 / Save M4A`. Do not use a context-free `保存 / Save` button.
 
@@ -226,6 +253,8 @@ Output may be generated in MEMFS for v1.0, so output size remains constrained by
 Before stable release, stream-copy a multi-GB video in desktop Chrome/Edge and verify no full-input JS/WASM duplication, responsive UI, cancellation, output Blob/save and memory release.
 
 For re-encoded output, estimate size approximately from bitrate × duration. For stream copy, use source audio bitrate × duration when available. Always label estimates as approximate.
+
+Display the currently selected encoding method (e.g. `PCM 16bit`) and the approximate size (e.g. `目安 1.3 MB`) together in a horizontally arranged facts row immediately before/above the Extract audio action, on both desktop and mobile. The output filename remains in a separate full-width field; do not align the estimate beside that input or separate the two facts across the width. Keep both fact IDs and dynamic formatting intact, including when one is unavailable. Prefer one line, with graceful wrapping only on constrained widths; maintain an accessible localized group label and the existing 8px spacing scale.
 
 ## 13. Runtime network and dependency pinning
 
@@ -465,6 +494,29 @@ Prefer reliable completion of one task over adding features.
 - Lock both background page scrolling roots only while a native modal is open. Dismiss confirmation by Close, Cancel, Escape or an outside-backdrop click, preserving existing audio and restoring opener focus. Inside and keyboard-generated child clicks do not dismiss it.
 - If resizing hides or removes the confirmation opener, return focus to the active visible mobile tab, or the visible Help button as a final fallback, without switching pages or changing media state.
 - The narrow header wraps its complete localized name and version while retaining the language and Help controls. Preserve the existing decorative shared shield and canonical app artwork.
+
+## v1.0.5 8px spacing and restrained card hierarchy
+
+- Use an 8px visual spacing scale for CSS margins, padding and gaps (0, 8, 16, 24, 32px, etc.) in desktop/mobile and dialogs; preserve minimum tap target sizes, border widths, and native safe-area insets separately.
+- Remove the visible hero heading while preserving an accessible h1 in the document outline. The remaining description and desktop local-processing badge share a compact row. On mobile, collapse the entire intro after a video is chosen.
+- Keep panels as quiet boundary markers: no box shadows, light separators, an 8px corner radius, and subtle selected-track/format accents rather than filled cards.
+- Verify structural/spacing constraints in source, readable, root, and self-extract builds, and browser geometry at narrow viewport sizes.
+
+## v1.0.5 compact UI and post-merge release
+
+- Keep the major workflow panels recognizable on desktop/mobile, but replace nested card borders around audio metadata, format options, settings, preview metadata and source selection with spacing, separators and selected-state emphasis.
+- Use the same down-arrow-to-tray SVG motif as PDF Fill & Sign for the video drop zone. Do not change the canonical favicon/brand icon.
+- Hide the informational fully-local-processing badge at the mobile page-tab breakpoint (560px). The hero has no visible title: retain only a screen-reader-accessible h1 for document structure. Show its short explanatory paragraph initially and on desktop; once a source file is accepted, collapse the entire hero on mobile.
+- Help Basics must explain how to choose a video/track, the distinction between unchanged extraction and conversion, and how to save when preview is unavailable. Remove nonessential instructions about how to dismiss dialogs. Keep functional Esc/backdrop/Close support.
+- On a merged PR into main, validate/build the production one-file artifacts, then create an immutable v<version> tag and GitHub Release with readable and self-extract HTML assets. Do not create duplicate releases for a previously published version.
+
+## v1.0.5 playback, localization and processing consistency
+
+- Rendering a completed result again (including on language changes or save) must not reset the audio element's current source or playback position. Unsupported-preview guidance remains visible and localized after a language change.
+- Source inspection errors and retry/cancel messages must be derived from translation keys so a language change updates visible dynamic errors without reloading media.
+- Output duration and size estimates favor the selected audio track's positive duration over the whole video duration. Where playback metadata becomes available, update the displayed result duration with that measured value. Keep the fallback for browsers unable to decode the output for preview.
+- Capture the output basename, encoding bitrate and channel choice at extraction start, before asynchronous runtime preparation. Track selection, format, bitrate, channel options and output basename remain unavailable for editing during preparation and processing, including on language rerenders. Source replacement and cancellation remain supported.
+- Preserve completed results and their captured filenames on failed/cancelled retries.
 
 ## Shared mobile footer and Help metadata
 

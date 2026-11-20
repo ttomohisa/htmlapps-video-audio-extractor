@@ -1,0 +1,71 @@
+name: Publish GitHub Release after PR merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: video-audio-extractor-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.event.pull_request.merged == true
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout merged commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Validate and build release artifacts
+        shell: pwsh
+        run: |
+          ./scripts/check-powershell-syntax.ps1
+          ./scripts/check-repository.ps1
+
+      - name: Create version tag and GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGED_COMMIT: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = (Get-Content -Raw -Encoding UTF8 app.config.json | ConvertFrom-Json).version
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Expected a SemVer release version in app.config.json, got: $version"
+          }
+          $tag = "v$version"
+
+          # Never move an existing version tag to a different commit.
+          $existingTags = @(& git tag --list $tag)
+          if ($existingTags.Count -gt 0) {
+            $tagCommit = (& git rev-list -n 1 $tag).Trim()
+            if ($tagCommit -ne $env:MERGED_COMMIT) {
+              Write-Host "$tag points to $tagCommit. This merge is not a new version; skipping release."
+              exit 0
+            }
+          }
+
+          # Re-running this workflow must not publish duplicate releases.
+          $PSNativeCommandUseErrorActionPreference = $false
+          & gh release view $tag --repo $env:GITHUB_REPOSITORY --json tagName 2>$null | Out-Null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "$tag already has a GitHub Release."
+            exit 0
+          }
+
+          & gh release create $tag "dist/index.html#video-audio-extractor.html" "dist/index.self-extract.html#video-audio-extractor.self-extract.html" --repo $env:GITHUB_REPOSITORY --target $env:MERGED_COMMIT --title "Video Audio Extractor $tag" --generate-notes
+          if ($LASTEXITCODE -ne 0) { throw "Failed to create GitHub Release $tag." }
+          Write-Host "Published $tag at $env:MERGED_COMMIT."

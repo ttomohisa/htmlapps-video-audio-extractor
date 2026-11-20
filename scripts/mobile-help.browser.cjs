@@ -11,6 +11,7 @@ const disclosureSelector = "#helpDialog .build-details details";
 
 async function prepareApp(page,width,label){
  assert.equal(await page.locator('.mobile-tabs').isVisible(),width<=560,label+': functional page tabs');
+ assert.equal(await page.evaluate(()=>matchMedia('(pointer:coarse)').matches),width<=560,label+': simulate touch-pointer behavior on mobile widths');
  if(width<=560)assert.ok(await page.locator('.mobile-tabs').evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;}),label+': functional tabs fit');
 }
 async function smoke(page,results,file){
@@ -21,9 +22,114 @@ async function smoke(page,results,file){
    return await new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.readAsDataURL(new Blob(chunks,{type:'video/webm'}));});
  });
  await page.locator('#fileInput').setInputFiles({name:'synthetic-video.webm',mimeType:'video/webm',buffer:Buffer.from(encoded.split(',')[1],'base64')});await page.waitForFunction(()=>!document.querySelector('#extractButton').disabled,null,{timeout:60000});
+ assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('has-source')),true,'selected video activates compact intro');
+ assert.equal(await page.locator('#audioSummary .summary-item').count(),4,'audio metadata has all four values');
+ await page.locator('.mobile-tab[data-page="audio"]').click();
+ assert.equal(await page.locator('#audioPanel').isVisible(),true,'audio summary is visible before measuring text');
+ assert.ok(await page.locator('#audioSummary .summary-item').first().evaluate(el=>{const s=getComputedStyle(el),item=el.getBoundingClientRect(),label=el.querySelector('.summary-label')?.getBoundingClientRect();return s.paddingLeft==='16px'&&s.paddingRight==='16px'&&label?.left-item.left>=15;}),'audio summary labels are inset on the smartphone');
+ await page.locator('.mobile-tab[data-page="format"]').click();
+ assert.equal(await page.locator('.page-intro').isVisible(),false,'mobile intro disappears entirely after choosing video');
  await page.locator('#outputFilename').fill('mobile-help-audio');await page.locator('#extractButton').click();await page.waitForFunction(()=>!document.querySelector('#saveButton').disabled,null,{timeout:60000});
  const pending=page.waitForEvent('download');await page.locator('#saveButton').click();const download=await pending;assert.equal(download.suggestedFilename(),'mobile-help-audio.opus');const target=path.join(results,file.includes('self-extract')?'synthetic-loader.opus':'synthetic-readable.opus');await download.saveAs(target);const bytes=fs.readFileSync(target);assert.ok(bytes.length>100);assert.equal(bytes.subarray(0,4).toString(),'OggS');
  const duration=await page.evaluate(async encoded=>{const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));const context=new AudioContext();try{return(await context.decodeAudioData(bytes.buffer)).duration;}finally{await context.close();}},bytes.toString('base64'));assert.ok(duration>0&&duration<5);
+ // The existing embedded core decodes the audio to PCM WAV. Browser-local
+ // trimming and peak normalization then operate without any external requests.
+ await page.locator('.mobile-tab[data-page="format"]').click();
+ const initialEnd=await page.locator('#trimEnd').inputValue();
+ assert.match(initialEnd,/^\d+:\d\d(?:\.\d+)?$/,'end time is pre-filled from the selected audio duration');
+ assert.equal(await page.locator('#trimHint').count(),0,'redundant time format note removed');
+ assert.equal(await page.locator('[data-i18n="waveHint"]').count(),0,'redundant waveform gesture note removed');
+ await page.locator('#trimMode').selectOption('range');
+ assert.equal(await page.locator('#waveLoadButton').isVisible(),false,'waveform starts automatically without a Show waveform button');
+ await page.waitForFunction(()=>{const ready=document.querySelector('#waveReady');const canvas=document.querySelector('#waveCanvas');return ready&&!ready.hidden&&canvas.width>0;},null,{timeout:60000});
+ assert.equal(await page.locator('#waveLoadButton').isVisible(),false,'retry button hidden when waveform is ready');
+ const decodedEnd=await page.evaluate(()=>({end:document.querySelector('#trimEnd').value.split(':').map(Number).reduce((total,n)=>total*60+n,0),actual:Number(document.querySelector('#waveEndHandle').getAttribute('aria-valuemax'))}));
+ assert.ok(Math.abs(decodedEnd.end-decodedEnd.actual)<.03,'default end matches decoded audio duration: '+JSON.stringify(decodedEnd));
+ const wavCanvas=await page.locator('#waveCanvas').evaluate(el=>{const pixels=el.getContext('2d').getImageData(0,0,el.width,el.height).data;return{width:el.width,hasBars:pixels.some((v,i)=>i%4===3&&v>0)};});
+ assert.ok(wavCanvas.width>=200&&wavCanvas.hasBars,'actual waveform contains sampled PCM peaks');
+ await page.locator('#wavePlayButton').click();
+ await page.waitForFunction(()=>{const a=document.querySelector('#waveAudio');return a&&!a.paused&&a.currentTime>.04;},null,{timeout:12000});
+ await page.locator('#waveMarkStart').click();
+ assert.notEqual(await page.locator('#trimStart').inputValue(),'0:00','start can be marked while audio plays');
+ await page.locator('#wavePlayButton').click();
+ assert.equal(await page.locator('#waveAudio').evaluate(a=>a.paused),true,'audio preview can be paused');
+ const bounds=await page.locator('#wavePlot').boundingBox();
+ if(await page.evaluate(()=>matchMedia('(pointer:coarse)').matches))await page.touchscreen.tap(Math.round(bounds.x+bounds.width*.35),Math.round(bounds.y+60));
+ else await page.locator('#wavePlot').click({position:{x:bounds.width*.35,y:60}});
+ await page.locator('#waveMarkStart').click();
+ assert.ok(await page.locator('#trimStart').inputValue()!=='0:00','set start from selected playback position');
+ await page.locator('#waveEndHandle').press('ArrowLeft');
+ assert.ok(await page.locator('#trimEnd').inputValue()!=='','end marker supports keyboard adjustments');
+ const knob=await page.locator('#waveStartHandle').boundingBox();
+ await page.mouse.move(knob.x+knob.width/2,knob.y+knob.height/2);
+ await page.mouse.down();
+ await page.mouse.move(bounds.x+bounds.width*.2,bounds.y+bounds.height/2,{steps:8});
+ await page.mouse.up();
+ const selectedStart=await page.locator('#trimStart').inputValue();
+ assert.ok(selectedStart!=='0:00'&&selectedStart!=='','start handle can be pointer dragged');
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'waveform controls do not cause horizontal scroll');
+ await page.locator('#trimStart').fill('0:00.2');
+ await page.locator('#trimEnd').fill('0:00.7');
+ await page.locator('#gainMode').selectOption('normalize');
+ assert.equal(await page.locator('.format-choice[data-mode="copy"] input').isDisabled(),true,'copy is unavailable for edited audio');
+ assert.equal(await page.locator('.format-choice[data-mode="mp3"] input').isDisabled(),true,'editing is WAV-only');
+ assert.equal(await page.locator('.format-choice[data-mode="wav"] input').isChecked(),true,'edit visibly chooses WAV');
+ assert.equal(await page.locator('#editNote').isVisible(),true,'WAV limitation is explained');
+ assert.equal(await page.locator('#editError').isVisible(),false,'valid time range');
+ await page.locator('#outputFilename').fill('time-and-volume');
+ await page.locator('#extractButton').click();
+ await page.waitForFunction(()=>!document.querySelector('#saveButton').disabled&&document.querySelector('#resultFormat')?.textContent==='WAV',null,{timeout:60000});
+ const editedDuration=await page.locator('#resultDuration').textContent();
+ assert.match(editedDuration,/0:00|0:01/);
+ const pendingEdited=page.waitForEvent('download');
+ await page.locator('#saveButton').click();
+ const editedDownload=await pendingEdited;
+ assert.equal(editedDownload.suggestedFilename(),'time-and-volume.wav');
+ const editedPath=path.join(results,file.includes('self-extract')?'edited-self-extract.wav':'edited-readable.wav');
+ await editedDownload.saveAs(editedPath);
+ const editedBytes=fs.readFileSync(editedPath);
+ assert.equal(editedBytes.toString('ascii',0,4),'RIFF','valid PCM container');
+ assert.equal(editedBytes.toString('ascii',8,12),'WAVE','valid WAV header');
+ const editedSeconds=await page.evaluate(async encoded=>{
+   const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));
+   const ctx=new AudioContext();
+   try{return(await ctx.decodeAudioData(bytes.buffer)).duration;}finally{await ctx.close()}
+ },editedBytes.toString('base64'));
+ assert.ok(editedSeconds>=.4&&editedSeconds<=.6,'range length near 0.5 sec');
+ assert.equal(await page.locator('#progressTrack').evaluate(el=>el.classList.contains('indeterminate')),false,'cached WAV editing uses determinate progress');
+ // Real transcoding checks: unedited MP3 and M4A are still functional after
+ // selecting and exporting the new time/volume edit features.
+ await page.locator('.mobile-tab[data-page="format"]').click();
+ await page.locator('#trimMode').selectOption('full');
+ await page.locator('#gainMode').selectOption('none');
+ for (const format of ['mp3','m4a']) {
+   const choice=page.locator('.format-choice[data-mode="'+format+'"]');
+   assert.equal(await choice.locator('input').isDisabled(),false,format+': available after clearing edits');
+   await choice.click();
+   assert.equal(await choice.locator('input').isChecked(),true,format+': selected');
+   await page.locator('#outputFilename').fill('convert-'+format);
+   await page.locator('#extractButton').click();
+   await page.waitForFunction(mode=>document.querySelector('#resultFormat')?.textContent===mode.toUpperCase()&&!document.querySelector('#saveButton').disabled,format,{timeout:60000});
+   const pendingConversion=page.waitForEvent('download');
+   await page.locator('#saveButton').click();
+   const converted=await pendingConversion;
+   assert.equal(converted.suggestedFilename(),'convert-'+format+'.'+format);
+   const destination=path.join(results,format+(file.includes('self-extract')?'-self':'-readable')+'.'+format);
+   await converted.saveAs(destination);
+   const content=fs.readFileSync(destination);
+   assert.ok(content.length>200,format+': actual encoded output');
+   if(format==='m4a')assert.equal(content.toString('ascii',4,8),'ftyp','M4A is ISO BMFF');
+   const seconds=await page.evaluate(async encoded=>{
+     const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));
+     const ctx=new AudioContext();
+     try{return(await ctx.decodeAudioData(bytes.buffer)).duration;}finally{await ctx.close()}
+   },content.toString('base64'));
+   assert.ok(seconds>.3&&seconds<5,format+': browser decodes actual output');
+   await page.locator('.mobile-tab[data-page="format"]').click();
+   console.log('PASS real '+format+' transcode after waveform editing '+file);
+ }
+
+ console.log('PASS generated Opus + WAV time trim and peak normalize '+file);
  console.log('PASS synthetic canvas/oscillator video to edited-name Opus and native audio decode '+file);
 }
 
@@ -64,7 +170,7 @@ async function main() {
     for (const file of ['dist/index.html', 'dist/index.self-extract.html', 'video-audio-extractor.html']) {
       for (const language of ['ja', 'en']) {
         for (const [width, height] of [[1360, 900], [561, 568], [560, 568], [360, 640], [390,844], [320, 568], [393, 252]]) {
-          const context = await browser.newContext({ viewport: { width, height }, locale: language, reducedMotion: 'reduce' });
+          const context = await browser.newContext({ viewport: { width, height }, locale: language, reducedMotion: 'reduce', hasTouch: width <= 560, isMobile: width <= 560 });
           const page = await context.newPage();
           const errors = [], requests = [];
           page.on('pageerror', error => errors.push(error.message));
@@ -79,6 +185,59 @@ async function main() {
             assert.equal(await page.locator('html').getAttribute('lang'),language,label+': repeated language toggles');
             for(const id of ["buildVersion", "coreVersion"]){assert.equal(await page.locator('#'+id).count(),1,label+': unique metadata after toggles');assert.ok(!['','—','-'].includes((await page.locator('#'+id).textContent()).trim()),label+': populated metadata after toggles');}
             assert.equal(await page.locator('[data-i18n="localBadge"]').textContent(), language === 'en' ? 'Fully local processing' : '完全ローカル処理', label);
+            assert.equal(await page.locator('.local-badge').isVisible(),width>560,label+': fully local label only shown on desktop');
+            assert.equal(await page.locator('.page-intro p').isVisible(),true,label+': initial description visible before choosing a video');
+            assert.equal(await page.locator('main').evaluate(el=>getComputedStyle(el).paddingTop),'8px',label+': balanced eight-pixel space above intro');
+            assert.ok(await page.evaluate(()=>{const gap=document.querySelector('.page-intro p').getBoundingClientRect().top-document.querySelector('.app-header').getBoundingClientRect().bottom;return gap>=8&&gap<=16}),label+': balanced intro space below header');
+            assert.equal(await page.locator('#trimHint').count(),0,label+': no time-format hint');
+            assert.equal(await page.locator('[data-i18n="waveHint"]').count(),0,label+': no redundant waveform hint');
+            if (width <= 560) {
+              const heroSpacing = await page.evaluate(() => {
+                const header = document.querySelector('.app-header').getBoundingClientRect();
+                const paragraph = document.querySelector('.page-intro p').getBoundingClientRect();
+                const panel = document.querySelector('#videoPanel').getBoundingClientRect();
+                return { top: paragraph.top - header.bottom, bottom: panel.top - paragraph.bottom };
+              });
+              assert.ok(heroSpacing.top >= 0 && heroSpacing.top <= 16, label + ': intro sits close below header: ' + JSON.stringify(heroSpacing));
+              assert.ok(heroSpacing.bottom >= 0 && heroSpacing.bottom <= 16, label + ': intro sits close above first panel: ' + JSON.stringify(heroSpacing));
+            }
+            assert.equal(await page.locator('.page-intro h1').count(),0,label+': no visible hero title element');
+            assert.equal(await page.locator('#useVideoNameButton').count(),0,label+': no unnecessary source-name reset button');
+            assert.equal(await page.locator('#filenameHelp').count(),0,label+': no redundant filename helper text');
+            const outputFactLayout = await page.evaluate(language => {
+              const panel=document.querySelector('#formatPanel'), group=document.querySelector('.output-facts');
+              const method=document.querySelector('#methodSummary'), size=document.querySelector('#outputEstimate');
+              const hidden=getComputedStyle(panel).display==='none';
+              if(hidden) panel.classList.add('mobile-active');
+              const oldMethod=method.textContent, oldSize=size.textContent;
+              method.textContent=language==='ja'?'MP3 320 kbps · ステレオ':'MP3 320 kbps · Stereo';
+              size.textContent=language==='ja'?'目安 1.3 MB':'Approx. 1.3 MB';
+              const a=method.getBoundingClientRect(),b=size.getBoundingClientRect(),g=group.getBoundingClientRect();
+              const result={
+                isGrouped:method.parentElement===group&&size.parentElement===group&&group.parentElement.classList.contains('action-row'),
+                flex:getComputedStyle(group).display, direction:getComputedStyle(group).flexDirection,
+                aligned:Math.abs(a.top-b.top)<2&&b.left>a.right&&b.right<=g.right+1,
+                noOverflow:document.documentElement.scrollWidth<=innerWidth,
+                filenameAreaHasEstimate:document.querySelector('.filename-row').contains(size),
+                accessibleLabel:group.getAttribute('aria-label')
+              };
+              method.textContent=oldMethod;size.textContent=oldSize;
+              if(hidden) panel.classList.remove('mobile-active');
+              return result;
+            },language);
+            assert.equal(outputFactLayout.isGrouped,true,label+': estimated size and method share the action row');
+            assert.equal(outputFactLayout.flex,'flex',label+': output facts use flex');
+            assert.equal(outputFactLayout.direction,'row',label+': output facts flow horizontally');
+            assert.equal(outputFactLayout.aligned,true,label+': MP3 facts sit side by side without wrapping');
+            assert.equal(outputFactLayout.noOverflow,true,label+': output facts fit viewport');
+            assert.equal(outputFactLayout.filenameAreaHasEstimate,false,label+': estimate is not beside filename');
+            assert.equal(outputFactLayout.accessibleLabel,language==='ja'?'出力情報':'Output details',label+': group label is localized');
+            assert.ok(await page.evaluate(()=>{const host=document.querySelector('#audioSummary');const item=document.createElement('div');item.className='summary-item';item.innerHTML='<span class="summary-label">Codec</span>';host.append(item);const style=getComputedStyle(item);const rect=item.getBoundingClientRect(),label=item.querySelector('span').getBoundingClientRect();const okay=style.paddingLeft==='16px'&&style.paddingRight==='16px'&&(rect.width===0||label.left-rect.left>=15);item.remove();return okay;}),label+': audio metadata label inset on desktop and mobile');
+            assert.equal(await page.locator('main > h1.sr-only').count(),1,label+': retained semantic page heading');
+            assert.ok(await page.locator('#videoPanel').evaluate(el=>getComputedStyle(el).boxShadow==='none'&&getComputedStyle(el).borderRadius==='8px'),label+': quiet workflow panel styling');
+            assert.equal(await page.locator('#dropZone .drop-icon svg').count(),1,label+': download tray icon');
+            assert.ok(await page.locator('#dropZone .drop-icon').evaluate(el=>{const c=getComputedStyle(el);return c.borderTopWidth==='0px'&&c.backgroundColor==='rgba(0, 0, 0, 0)'&&c.boxShadow==='none'}),label+': tray icon has no frame or background');
+            assert.ok(await page.locator('#dropZone .drop-icon svg').evaluate(svg=>[...svg.querySelectorAll('path')].some(path=>path.getAttribute('d')==='M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3')),label+': reference tray geometry');
             assert.ok(await page.locator('.local-badge').evaluate(el => {
               const box = el.getBoundingClientRect();
               const range = document.createRange();
@@ -97,7 +256,13 @@ async function main() {
         await page.locator('#helpButton').click();
         const visibleHelpText = await page.locator('#helpDialog').innerText();
         assert.doesNotMatch(visibleHelpText, /(?:EN\s*\/\s*JA|JA\s*[\/／]\s*EN|ヘッダーのEN|Use EN in the header)/, label + ': redundant language instructions removed');
-        assert.match(visibleHelpText, language === 'ja' ? /確認を閉じても作成済み音声は残ります/ : /dismissing a confirmation keeps existing audio/i, label + ': useful adjacent Help guidance retained');
+        assert.doesNotMatch(visibleHelpText, /(?:ヘルプや確認画面は閉じるボタン|dismissing a confirmation keeps existing audio|Dismiss Help or confirmations)/i, label+': redundant modal instructions removed');
+        assert.match(visibleHelpText, language === 'ja' ? /音声がない動画からは抽出できません/ : /Videos without audio cannot be extracted/, label+': useful audio limitation retained in supported scope');
+        assert.match(visibleHelpText, language === 'ja' ? /プレビューできない形式でも、作成した音声は保存できます/ : /You can still save generated audio if preview is unavailable/, label+': useful download guidance retained in scope');
+        const basics=page.locator('#helpDialog .dialog-body > ul > li');
+        assert.equal(await basics.count(),3,label+': three concise basic steps');
+        for(const item of await basics.all()){assert.ok((await item.innerText()).length<=90,label+': short, readable basic step')}
+        assert.match(visibleHelpText, language==='ja'?/「音声を取り出す」を押し、完了したら保存します/:/Choose Extract audio, then save the finished file/,label+': finishing action is clear');
 
             const body = page.locator('#helpDialog > .dialog-body');
             assert.ok(await body.evaluate(el => el.lastElementChild.contains(document.querySelector('#buildVersion'))), label + ': build is final body child');
@@ -107,8 +272,7 @@ async function main() {
 
             if (await page.locator(disclosureSelector).getAttribute('open') === null) {
               const summary = page.locator(disclosureSelector).locator('summary');
-              await summary.focus();
-              await page.keyboard.press('Enter');
+              await summary.press('Enter');
               assert.equal(await page.locator(disclosureSelector).getAttribute('open'), '', label);
               assert.notEqual(await page.locator('#buildVersion').innerText(), '—', label);
               assert.ok(!['','—','-'].includes((await page.locator('#coreVersion').innerText()).trim()),label+': populated metadata');

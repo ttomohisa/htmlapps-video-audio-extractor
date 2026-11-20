@@ -1,5 +1,137 @@
 # Video Audio Extractor regression checklist
 
+## v1.1.0 release-candidate deep review (2026-11-21)
+
+Automated checks:
+
+- [x] Stream-copy Opus, waveform-generated and peak-normalized PCM16 WAV, and *real* MP3/M4A transcoding from the selected input verified through browser decode and downloaded output on readable and self-extract single-HTML builds.
+- [x] Cached WAV editing removes indeterminate progress and finishes at 100%, clearing busy-state ARIA when complete.
+- [x] Silent audio normalization keeps samples silent; +6 dB amplification clamps to PCM16 bounds rather than wrapping.
+- [x] Malformed and over-budget PCM WAV input is rejected, and aborted PCM processing exits without output.
+- [x] Cancelling a waveform preparation, retrying it, and replacing the source before an old waveform completes cannot commit stale audio.
+- [x] Existing privacy/network/CSP, filename, error-state, localization, source-duration, 8px-spacing and help-dialog checks are still part of the source, readable, root and self-extract builds.
+
+Manual / release follow-up:
+
+- [ ] Physically test iOS Safari and Android Chrome (touch/seek/playback and longer real recordings), not covered by desktop Chromium simulation.
+- [ ] Refresh representative README screenshots for the substantially changed v1.1.0 UI before publication if current images no longer match.
+- [ ] Confirm the release-on-merge workflow creates v1.1.0 tag and GitHub Release on the actual user merge, and verify attachments after publication; these events cannot run on an open PR.
+
+
+## v1.1.0 balanced intro, icon and simplified Help
+
+- [x] Introductory text begins with 8px top spacing on PC/mobile instead of zero padding; remains hidden after source selection on mobile.
+- [x] Download-tray icon remains visible at 40px, with no icon background, border or shadow; drop-area outline stays in place.
+- [x] Help Basics has three concise bilingual steps. Source/no-audio and preview-save caveats remain documented in Supported scope.
+- [x] Browser test covers page geometry, icon styling and full Help reachability at narrow widths.
+
+## v1.1.0 simplified range and waveform UX
+
+- [x] A loaded source presets End to the selected audio track's duration; on a different track the default updates.
+- [x] Choosing Set a time range immediately starts waveform preparation, without a separate Show waveform step; a retry control is reserved for failed or canceled loading.
+- [x] The preview's decoded duration replaces the untouched initial End, but manually selected end markers and typed times are preserved.
+- [x] No obsolete waveform/time hint remains in Japanese/English, and the intro uses a balanced 8px top gap on PC/mobile.
+
+## v1.1.0 waveform-assisted selection
+
+Automated checks:
+- [x] PCM peaks are drawn from decoded WAV and can be played in the browser.
+- [x] Play/pause, seeking, playhead start/end actions and keyboard-adjustable range markers work together with manual time fields.
+- [x] A decoded WAV preview can be reused for the final WAV without a second FFmpeg invocation.
+- [x] Changing the source revokes the preview Blob URL and clears the cache.
+- [x] Japanese/English and narrow-mobile tests cover the new controls.
+
+Manual follow-up:
+- [ ] Test real Android/iPhone touch-drag, speaker output and iOS Safari audio restrictions.
+- [ ] Test unsupported browser-native video codecs with the WAV preview path.
+
+## v1.1.0 local time-range and gain/peak normalization
+
+Automated checks:
+
+- [x] Parse seconds, m:ss, h:mm:ss, fractions; reject malformed or reversed/empty ranges.
+- [x] Generate valid PCM16 WAV after sample-accurate range slicing and a fixed gain change; preserve original source samples.
+- [x] Peak-normalize a synthetic PCM waveform to approximately -1 dBFS without clipping/silence division errors.
+- [x] Enforce known source duration, mono/stereo input and size cap before editing.
+- [x] Switch editing output to WAV and disable stream-copy/M4A/MP3 only while edits are active.
+- [x] Run actual local Chromium WAV trim/normalize/save smoke on the embedded runtime, verify RIFF/WAVE header, decoded output length, no external runtime requests, and retain existing plain Opus extraction.
+
+Manual follow-up:
+
+- [ ] Android and iOS phones: test duration validation, keyboard, navigation, memory warning, cancel and large input.
+- [ ] Real music and speech: verify fixed gain/clipping, peak normalization and very short segments.
+- [ ] Long recordings and multichannel formats: verify graceful documented rejection.
+
+
+
+## v1.0.5 grouped encoding and estimated size
+
+- [x] Keep `methodSummary` and `outputEstimate` together in the same `output-facts` group, separate from the filename input, before Extract audio.
+- [x] Desktop/mobile layout presents both facts horizontally when room permits, including 320px and long Japanese/English labels, without horizontal scrolling.
+- [x] Existing estimates remain dynamic when changing MP3/WAV output settings; hide missing estimate without orphaned dividers.
+- [x] Cover original, readable and self-extract standalone variants in the synthetic tests and Chromium checks.
+
+
+## v1.0.5 simplified filename row and summary inset
+
+- [x] Removed the redundant filename reset button and helper text on PC/mobile; name editing, automatic initial names, and completed-result protection are retained.
+- [x] Four audio metadata items have 16px left/right text insets on PC/mobile, including the 2-column mobile grid.
+- [x] New browser and synthetic-DOM tests cover the removed controls, inset, filename editing, processing lock, and retry.
+
+## v1.0.5 compact intro spacing
+
+- [x] Mobile Chromium verifies that the introductory copy is within 16px of the header and the first workflow panel (8px design spacing, with text bounding-box tolerance).
+- [x] Keep the explanatory copy visible before file selection and fully hide the intro after accepting a video.
+
+## v1.0.5 eight-point spacing and quiet cards
+
+Automated source/build regression:
+
+- [x] Every authored CSS padding, margin and gap value is on the 8px spacing grid, including responsive overrides, except browser-controlled safe-area insets (not fixed pixel values).
+- [x] No visible h1 remains in the intro; a visually hidden semantic h1 is retained for accessibility.
+- [x] The main panels have a subtle single border, no shadow, and 8px corners; selected track and format states remain visible.
+- [x] The entire introductory area is removed from the mobile workflow after a video is accepted.
+
+Manual layout review:
+
+- [ ] Inspect PC and smartphone screenshots for rhythm of space, subdued card appearance, and appropriate hierarchy without the hero heading.
+
+## v1.0.5 UI and release integration
+
+Automated Chromium smoke (including 320px, 360px, 390px, tablet-width and desktop; both UI languages):
+
+- [x] Tray/down-arrow SVG matches the PDF Fill & Sign reference shape.
+- [x] Local-processing badge is invisible at the mobile page-tab breakpoint but remains visible on desktop.
+- [x] The introductory description is visible before selecting a file and becomes hidden on mobile once video selection is accepted.
+- [x] Help contains audio-selection, conversion and saving guidance rather than dialog-closing implementation instructions.
+- [x] Updated panels, mobile navigation, Help dialogs and long-language layouts retain the existing geometry/overflow checks.
+
+Manual release checks:
+
+- [ ] Review actual desktop and mobile screenshots for overly nested boxes, selected states, touch area and contrast.
+- [ ] Verify the readable/self-extract standalone HTML attachments after PR merge.
+- [ ] Verify release workflow creates the v1.1.0 tag and GitHub Release only after the PR is merged into main, and is idempotent when re-run.
+
+
+## v1.0.5 preview, localization and settings
+
+Automated (source, readable build, root copy and restored self-extract):
+
+- [x] Re-rendering result, switching language and saving do not reload the active audio source or reset the playback position in the synthetic DOM harness.
+- [x] Unsupported-preview warning remains hidden/visible as appropriate and changes language with the UI.
+- [x] Source errors, processing errors and cancellation notices follow language changes.
+- [x] Selected-track duration takes priority over container duration; loaded audio metadata can correct the result duration.
+- [x] Processing snapshots the filename and MP3 bitrate/channel choice before asynchronous setup; editable settings are disabled during preparation and processing.
+
+Manual follow-up (not represented by synthetic tests):
+
+- [ ] Desktop Chrome/Edge: play extracted audio, toggle language and request save while playback continues; verify elapsed position is unchanged.
+- [ ] Mobile Android Chrome: verify unsupported-preview warning, error-language switching, and result playback controls.
+- [ ] Multi-audio video with a shorter selected track: verify result duration and estimated size in M4A/MP3/WAV and stream-copy modes.
+- [ ] Long MP3/M4A transcode: verify controls lock during preparation/processing, cancel/retry restores controls and prior result, and source replacement remains possible.
+- [ ] Direct `file://` opening of both generated variants and DevTools network capture (no runtime external requests).
+
+
 ## v0.3.0 automated / fixture coverage
 
 The dedicated Builder profile browser smoke test covers:
@@ -169,19 +301,19 @@ The dedicated Builder profile browser smoke test covers:
 - [ ] Console shows no unexpected errors during the complete flow.
 
 
-## Next-run filename reset and dotted-name regressions
+## Next-run filename and dotted-name regressions
 
 `node scripts/test-output-filename.cjs [HTML path]` executes application functions and event bindings in a synthetic Node VM harness. With no path it tests `src/index.template.html`; the repository checker also runs readable, root, and restored self-extract output. It does not run a browser, decode media, or establish visual accessibility.
 
 Automated coverage:
 - Default multi-dot source names and custom dotted names survive repeated blur/extract/save.
-- Reset restores the current source stem plus `-audio`, focuses the field, and preserves track/format/quality/channels and preference boundaries.
-- Reset is disabled and guarded without usable input and during preparation/processing; cancellation/failure restore availability.
-- Reset/edit leave a completed result's captured filename and URL intact; successful retry uses the new draft and revokes only the superseded URL.
+- Source selection fills the basename with the source stem plus `-audio`; the separate reset button and helper text are absent in both languages.
+- The filename field is editable before extraction, locked during preparation/processing, and unlocked after cancel, success, or failure.
+- Editing a next-run name leaves the completed result's filename and URL intact; successful retry uses the edited draft and revokes only the superseded URL.
 - Path/control/invalid characters, empty/all-dot input, reserved device names with dot suffixes, Unicode and truncation boundaries stay safe and idempotent.
 - Actual selected stream index, WORKERFS, copy/M4A/MP3/WAV arguments, CSP and five-key preferences remain unchanged.
 
 Manual follow-up, not claimed by the automated suite:
-- [ ] Keyboard Enter/Space activation, visible focus, and correct field focus after reset.
-- [ ] Japanese/English at desktop and 320 px widths, including long names and helper text.
+- [ ] Filename field focus, input, and automatic source-based initial value with keyboard navigation.
+- [ ] Japanese/English at desktop and 320 px widths, including long output names and metadata text inset.
 - [ ] Real media extraction/download in all output modes and direct `file://` use in supported browsers.

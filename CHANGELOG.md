@@ -1,5 +1,60 @@
 # Changelog
 
+## [1.1.0] - 2026-11-21
+
+### Release-candidate regression review
+- Fix a waveform-cache extraction progress indicator that remained indeterminate during PCM editing; show determinate progress through completion.
+- Add real Chromium smoke coverage for Opus-to-MP3 and Opus-to-M4A conversion after waveform editing, including browser-decoded output and extension checks.
+- Expand PCM edge-case tests for silent normalization, positive-gain clipping, invalid and oversized WAV inputs, interrupted processing, waveform-load cancellation/retry and stale-source prevention.
+
+### UI polish
+- Restore a modest 8px top gap above the introductory description for a more balanced desktop/mobile layout.
+- Remove the background and border around the drop-area tray icon while retaining the outlined drop area.
+- Simplify Help Basics to three short steps in both languages, with unsupported-input and non-previewable-save notes in Supported scope.
+
+### Waveform selection
+- Automatically prepare and show the waveform when Set a time range is selected, without a separate Show waveform action; allow retry only if loading fails or is cancelled.
+- Prefill End from the selected track's duration, update from decoded WAV duration while untouched, and retain manual/end-handle changes.
+- Remove redundant hint text below the waveform and time controls; keep the intro spacing compact without eliminating it.
+- Generate a local PCM-derived waveform on demand. Play/pause, click/tap seek, set start/end at playhead, drag range handles and adjust sliders with the keyboard on mobile and desktop.
+- Reuse WAV preview data during export, cancel stale load operations, and release preview Blob URLs when changing sources/tracks or leaving range mode.
+- Shorten the WAV-only editing note without the extra warning sentence.
+
+### Added
+- Extract a selected time range using seconds, m:ss or h:mm:ss inputs, with an optional open-ended End time.
+- Adjust audio gain by -12, -6, +3 or +6 dB, or normalize the resulting WAV samples to approximately -1 dBFS peak.
+- Decode the selected track to a temporary PCM16 WAV through the already-embedded local WASM runner and process PCM samples locally. Edited audio saves as WAV only; ordinary no-edit stream copy and M4A/MP3/WAV conversion remain unchanged.
+- Use field-local errors and a memory-safety cap (128 MiB estimated temporary PCM on mobile, 256 MiB desktop), with documented known-duration and mono/stereo restrictions.
+- Add synthetic PCM regressions, browser WAV output/decoding tests, and bilingual instructions.
+
+## [1.0.5] - 2026-11-20
+
+### Improved UI and release workflow
+- Group the selected encoding method (`PCM 16bit`, MP3 bitrate, etc.) with the approximate output size immediately ahead of Extract audio on desktop and smartphone, rather than splitting these facts between the filename row and action row.
+- Add bilingual accessible labeling and layout checks for the grouped facts, preserving size recalculation and small-screen behavior.
+- Remove the redundant filename reset button and its helper text, while retaining editable prefilled filenames and stable completed results.
+- Add 16px horizontal padding to each audio metadata field on desktop and smartphone, keeping separators and the 8px spacing system.
+- Update filename regressions and add Chromium checks for the simplified filename UI and metadata insets.
+- Tighten the intro spacing to 8px above/below the text on mobile, reducing empty space between the sticky header and first workflow panel.
+- Standardize all authored CSS margin/padding/gap spacing to an 8px grid, including desktop, mobile, and dialogs; preserve tap targets and device safe areas.
+- Remove the visible hero heading, retain a screen-reader-only page heading, and collapse the introductory area completely after video selection on mobile.
+- Tone down panel boundaries, surfaces and selected-state highlights; retain clear step separation without nested card shadows.
+- Add spacing/hierarchy checks for source and standalone builds and Chromium checks for the simplified layout.
+- Simplify nested borders and boxed settings on desktop and mobile, while retaining clear workflow panel boundaries and selected states.
+- Match the PDF Fill & Sign download-tray icon in the video drop area.
+- Hide the local-processing badge on mobile, and hide the intro description after a video is selected on mobile.
+- Replace redundant modal-closing instructions with practical bilingual Help on supported extraction, choosing a track, saving and preview limitations.
+- Create the version tag and publish a GitHub Release containing both standalone HTML variants when a version-changing PR is merged into main; skip already released tags.
+- Add Chromium regressions for the icon, contextual intro, mobile badge and revised Help.
+
+### Fixed
+- Preserve current audio preview position and unsupported-preview state during language changes, saving, and result updates.
+- Re-translate source errors, processing failures, cancellations, and preview warnings when switching between Japanese and English.
+- Prefer the selected audio track's duration for estimates/results and update the result with actual playback metadata when available.
+- Capture output filename, bitrate, and channel settings at extraction start; lock editing while preparing or processing.
+- Add regression coverage for both standalone variants and synchronize the Japanese/English READMEs with v1.0.5.
+
+
 ## 1.0.4 - 2026-10-27
 
 - Remove redundant language-switching instructions from Japanese and English Help. Preserve the adjacent state-retention, accessibility, and dialog guidance where present.
