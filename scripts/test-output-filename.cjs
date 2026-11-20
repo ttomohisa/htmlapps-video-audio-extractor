@@ -12,7 +12,7 @@ let html = fs.readFileSync(inputPath, 'utf8');
 const payload = html.match(/<script\s+id="self-extract-payload"\s+type="application\/octet-stream">([A-Za-z0-9+/=\r\n]+)<\/script>/);
 if (payload) html = gunzipSync(Buffer.from(payload[1], 'base64')).toString('utf8');
 const lines = html.split('\n');
-const functionNames = ['safeBase', 'defaultOutputBase', 'sourceAudioDuration', 'normalizedOutputBase', 'selectedTrack', 'outputSpec', 'virtualInputPath', 'workerFsBlob', 'isCurrentOperation', 'abortError', 'chooseDefaultTrack', 'loadSource', 'extract', 'saveResult', 'setPhase', 'renderFormat', 'cancelCurrent', 'formatName', 'revokeResult'];
+const functionNames = ['safeBase', 'defaultOutputBase', 'sourceAudioDuration', 'editsEnabled', 'parseAudioTime', 'editConfiguration', 'editWavPcm16', 'normalizedOutputBase', 'selectedTrack', 'outputSpec', 'virtualInputPath', 'workerFsBlob', 'isCurrentOperation', 'abortError', 'chooseDefaultTrack', 'loadSource', 'extract', 'saveResult', 'setPhase', 'renderFormat', 'cancelCurrent', 'formatName', 'revokeResult'];
 const functions = functionNames.flatMap(name => lines.filter(line => new RegExp(`^\\s*(?:async )?function ${name}\\(`).test(line))).join('\n');
 const events = lines.find(line => line.trimStart().startsWith("$('#extractButton').onclick=extract;"));
 assert.ok(events, 'The app action handlers must be tested');
@@ -31,13 +31,13 @@ function harness() {
     });
     return elements.get(id);
   };
-  const state = {file:null,report:null,selectedIndex:null,result:null,attempt:null,phase:'empty',generation:0,operationId:0,abort:null,outputMode:'copy',mp3Channels:1,aacBitrateKbps:192,mp3BitrateKbps:256,language:'en'};
+  const state = {file:null,report:null,selectedIndex:null,result:null,attempt:null,trimMode:'full',trimStart:'0:00',trimEnd:'',gainMode:'none',phase:'empty',generation:0,operationId:0,abort:null,outputMode:'copy',mp3Channels:1,aacBitrateKbps:192,mp3BitrateKbps:256,language:'en'};
   let run = async options => ({files:[{name:options.outputs[0],data:new Uint8Array([1,2,3,4])}]});
   const runner = {run:async options=>{calls.push(options);return run(options);}};
   let getRunner = async()=>runner;
   let url = 0;
   const context = vm.createContext({state,$:element,$$:()=>[],Blob,File,AbortController,Uint8Array,Date,Number,Error,TypeError,
-    console:{error(){}},matchMedia:()=>({matches:false}),URL:{createObjectURL:()=>`blob:synthetic-${++url}`,revokeObjectURL:u=>revoked.push(u)},
+    console:{error(){}},setTimeout,matchMedia:()=>({matches:false}),URL:{createObjectURL:()=>`blob:synthetic-${++url}`,revokeObjectURL:u=>revoked.push(u)},
     document:{body:{append(){},classList:{add(){},remove(){}}},createElement(tag){assert.equal(tag,'a');return {href:'',download:'',click(){downloads.push({href:this.href,name:this.download});},remove(){}};}},
     BrowserFFmpeg:{videoAudioExtractorInspectArgs:x=>({kind:'inspect',...x}),videoAudioExtractorCopyArgs:x=>({kind:'copy',...x}),videoAudioExtractorTranscodeArgs:x=>({kind:'transcode',...x}),decodeJsonOutput:()=>currentReport},
     getRunner:()=>getRunner(),renderReport(){context.renderFormat();},renderResult(){},unlockTabs(){},setMobilePage(){},announce(){},showToast(){},setSourceError(){},clearAudioPreview(){},navigateToStep(){},
