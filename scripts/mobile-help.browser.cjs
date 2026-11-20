@@ -22,7 +22,7 @@ async function smoke(page,results,file){
  });
  await page.locator('#fileInput').setInputFiles({name:'synthetic-video.webm',mimeType:'video/webm',buffer:Buffer.from(encoded.split(',')[1],'base64')});await page.waitForFunction(()=>!document.querySelector('#extractButton').disabled,null,{timeout:60000});
  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('has-source')),true,'selected video activates compact intro');
- assert.equal(await page.locator('.page-intro p').isVisible(),false,'mobile description disappears after choosing video');
+ assert.equal(await page.locator('.page-intro').isVisible(),false,'mobile intro disappears entirely after choosing video');
  await page.locator('#outputFilename').fill('mobile-help-audio');await page.locator('#extractButton').click();await page.waitForFunction(()=>!document.querySelector('#saveButton').disabled,null,{timeout:60000});
  const pending=page.waitForEvent('download');await page.locator('#saveButton').click();const download=await pending;assert.equal(download.suggestedFilename(),'mobile-help-audio.opus');const target=path.join(results,file.includes('self-extract')?'synthetic-loader.opus':'synthetic-readable.opus');await download.saveAs(target);const bytes=fs.readFileSync(target);assert.ok(bytes.length>100);assert.equal(bytes.subarray(0,4).toString(),'OggS');
  const duration=await page.evaluate(async encoded=>{const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));const context=new AudioContext();try{return(await context.decodeAudioData(bytes.buffer)).duration;}finally{await context.close();}},bytes.toString('base64'));assert.ok(duration>0&&duration<5);
@@ -83,6 +83,9 @@ async function main() {
             assert.equal(await page.locator('[data-i18n="localBadge"]').textContent(), language === 'en' ? 'Fully local processing' : '完全ローカル処理', label);
             assert.equal(await page.locator('.local-badge').isVisible(),width>560,label+': fully local label only shown on desktop');
             assert.equal(await page.locator('.page-intro p').isVisible(),true,label+': initial description visible before choosing a video');
+            assert.equal(await page.locator('.page-intro h1').count(),0,label+': no visible hero title element');
+            assert.equal(await page.locator('main > h1.sr-only').count(),1,label+': retained semantic page heading');
+            assert.ok(await page.locator('#videoPanel').evaluate(el=>getComputedStyle(el).boxShadow==='none'&&getComputedStyle(el).borderRadius==='8px'),label+': quiet workflow panel styling');
             assert.equal(await page.locator('#dropZone .drop-icon svg').count(),1,label+': download tray icon');
             assert.ok(await page.locator('#dropZone .drop-icon svg').evaluate(svg=>[...svg.querySelectorAll('path')].some(path=>path.getAttribute('d')==='M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3')),label+': reference tray geometry');
             assert.ok(await page.locator('.local-badge').evaluate(el => {
