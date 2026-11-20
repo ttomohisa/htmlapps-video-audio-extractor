@@ -28,12 +28,12 @@ function harness() {
   ]};
   const element = id => {
     if (!elements.has(id)) elements.set(id, {value:'',disabled:false,hidden:false,textContent:'',style:{},attributes:{},listeners:{},focusCount:0,
-      classList:{add(){},remove(){},toggle(){}},setAttribute(k,v){this.attributes[k]=v;},removeAttribute(k){delete this.attributes[k];},replaceChildren(){},
+      classList:{add(){},remove(){},toggle(){}},setAttribute(k,v){this.attributes[k]=v;},removeAttribute(k){delete this.attributes[k];},replaceChildren(){},pause(){this.paused=true;},load(){},
       addEventListener(k,fn){this.listeners[k]=fn;},focus(){this.focusCount++;},click(){if(!this.disabled)this.onclick?.();}
     });
     return elements.get(id);
   };
-  const state = {file:null,report:null,selectedIndex:null,result:null,attempt:null,trimMode:'full',trimStart:'0:00',trimEnd:'',gainMode:'none',phase:'empty',generation:0,operationId:0,abort:null,outputMode:'copy',mp3Channels:1,aacBitrateKbps:192,mp3BitrateKbps:256,language:'en'};
+  const state = {file:null,report:null,selectedIndex:null,result:null,attempt:null,trimMode:'full',trimStart:'0:00',trimEnd:'',gainMode:'none',wavePreview:null,waveLoading:false,waveAbort:null,waveRequestId:0,waveErrorKey:null,phase:'empty',generation:0,operationId:0,abort:null,outputMode:'copy',mp3Channels:1,aacBitrateKbps:192,mp3BitrateKbps:256,language:'en'};
   let run = async options => ({files:[{name:options.outputs[0],data:new Uint8Array([1,2,3,4])}]});
   const runner = {run:async options=>{calls.push(options);return run(options);}};
   let getRunner = async()=>runner;
@@ -249,6 +249,36 @@ function syntheticWav(rate=8000,channels=1,seconds=2,amplitude=1000){
   for(let i=0;i<frames*channels;i++)v.setInt16(44+i*2,amplitude,true);
   return out;
 }
+
+
+test('waveform envelope reads local WAV and preserves the whole duration',()=>{
+  const h=harness(),source=syntheticWav(8000,1,2,1000);
+  const info=h.context.inspectWavePcm(source),peaks=h.context.waveformPeaks(source);
+  assert.equal(info.frames,16000);
+  assert.equal(info.duration,2);
+  assert.equal(peaks.duration,2);
+  assert.equal(peaks.peaks.length,640);
+  assert.ok(peaks.peaks.every(v=>v>0&&v<0.05));
+  assert.equal(h.context.waveTime(65.25),'1:05.25');
+  assert.equal(h.context.waveTime(3661),'1:01:01');
+});
+
+test('cached full-track waveform is reused when exporting a time-range WAV',async()=>{
+  const h=harness();await h.load('meeting.mov');
+  const tr=h.state.report.audioStreams.find(x=>x.index===7);tr.channels=1;tr.sampleRate=8000;
+  const data=syntheticWav(8000,1,2,1250),before=h.calls.length;
+  h.state.wavePreview={data,url:'blob:wave-cache',duration:2,trackIndex:tr.index,generation:h.state.generation,rate:8000,peaks:new Float32Array(640)};
+  h.state.trimMode='range';h.element('#trimStart').value='0:00.2';h.element('#trimEnd').value='0:00.7';
+  h.context.renderFormat();await h.context.extract();
+  assert.equal(h.calls.length,before,'cached WAV should avoid a second FFmpeg operation');
+  assert.equal(h.state.result.duration,.5);
+  const exported=new Uint8Array(await h.blobs.at(-1).blob.arrayBuffer());
+  assert.equal(new DataView(exported.buffer).getInt16(44,true),1250);
+  assert.equal(exported.length,44+8000);
+  await h.load('other.mov');
+  assert.ok(h.revoked.includes('blob:wave-cache'),'new source releases waveform preview');
+  assert.equal(h.state.wavePreview,null);
+});
 
 test('time entry accepts m:ss and h:mm:ss but rejects malformed input',()=>{
   const h=harness();
