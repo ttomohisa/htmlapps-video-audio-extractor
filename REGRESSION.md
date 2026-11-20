@@ -1,5 +1,13 @@
 # Video Audio Extractor regression checklist
 
+## v1.0.5 grouped encoding and estimated size
+
+- [x] Keep `methodSummary` and `outputEstimate` together in the same `output-facts` group, separate from the filename input, before Extract audio.
+- [x] Desktop/mobile layout presents both facts horizontally when room permits, including 320px and long Japanese/English labels, without horizontal scrolling.
+- [x] Existing estimates remain dynamic when changing MP3/WAV output settings; hide missing estimate without orphaned dividers.
+- [x] Cover original, readable and self-extract standalone variants in the synthetic tests and Chromium checks.
+
+
 ## v1.0.5 simplified filename row and summary inset
 
 - [x] Removed the redundant filename reset button and helper text on PC/mobile; name editing, automatic initial names, and completed-result protection are retained.
