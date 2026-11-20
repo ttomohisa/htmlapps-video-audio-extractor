@@ -43,6 +43,8 @@ async function smoke(page,results,file){
  assert.ok(wavCanvas.width>=200&&wavCanvas.hasBars,'actual waveform contains sampled PCM peaks');
  await page.locator('#wavePlayButton').click();
  await page.waitForFunction(()=>{const a=document.querySelector('#waveAudio');return a&&!a.paused&&a.currentTime>.04;},null,{timeout:12000});
+ await page.locator('#waveMarkStart').click();
+ assert.notEqual(await page.locator('#trimStart').inputValue(),'0:00','start can be marked while audio plays');
  await page.locator('#wavePlayButton').click();
  assert.equal(await page.locator('#waveAudio').evaluate(a=>a.paused),true,'audio preview can be paused');
  const bounds=await page.locator('#wavePlot').boundingBox();
@@ -51,6 +53,14 @@ async function smoke(page,results,file){
  assert.ok(await page.locator('#trimStart').inputValue()!=='0:00','set start from selected playback position');
  await page.locator('#waveEndHandle').press('ArrowLeft');
  assert.ok(await page.locator('#trimEnd').inputValue()!=='','end marker supports keyboard adjustments');
+ const knob=await page.locator('#waveStartHandle').boundingBox();
+ await page.mouse.move(knob.x+knob.width/2,knob.y+knob.height/2);
+ await page.mouse.down();
+ await page.mouse.move(bounds.x+bounds.width*.2,bounds.y+bounds.height/2,{steps:8});
+ await page.mouse.up();
+ const selectedStart=await page.locator('#trimStart').inputValue();
+ assert.ok(selectedStart!=='0:00'&&selectedStart!=='','start handle can be pointer dragged');
+ assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'waveform controls do not cause horizontal scroll');
  await page.locator('#trimStart').fill('0:00.2');
  await page.locator('#trimEnd').fill('0:00.7');
  await page.locator('#gainMode').selectOption('normalize');
