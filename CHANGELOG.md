@@ -3,6 +3,7 @@
 ## [1.0.5] - 2026-11-20
 
 ### Improved UI and release workflow
+- Tighten the intro spacing to 8px above/below the text on mobile, reducing empty space between the sticky header and first workflow panel.
 - Standardize all authored CSS margin/padding/gap spacing to an 8px grid, including desktop, mobile, and dialogs; preserve tap targets and device safe areas.
 - Remove the visible hero heading, retain a screen-reader-only page heading, and collapse the introductory area completely after video selection on mobile.
 - Tone down panel boundaries, surfaces and selected-state highlights; retain clear step separation without nested card shadows.
