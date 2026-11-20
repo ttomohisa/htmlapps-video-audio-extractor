@@ -12,7 +12,7 @@ let html = fs.readFileSync(inputPath, 'utf8');
 const payload = html.match(/<script\s+id="self-extract-payload"\s+type="application\/octet-stream">([A-Za-z0-9+/=\r\n]+)<\/script>/);
 if (payload) html = gunzipSync(Buffer.from(payload[1], 'base64')).toString('utf8');
 const lines = html.split('\n');
-const functionNames = ['safeBase', 'defaultOutputBase', 'sourceAudioDuration', 'useVideoName', 'normalizedOutputBase', 'selectedTrack', 'outputSpec', 'virtualInputPath', 'workerFsBlob', 'isCurrentOperation', 'abortError', 'chooseDefaultTrack', 'loadSource', 'extract', 'saveResult', 'setPhase', 'renderFormat', 'cancelCurrent', 'formatName', 'revokeResult'];
+const functionNames = ['safeBase', 'defaultOutputBase', 'sourceAudioDuration', 'normalizedOutputBase', 'selectedTrack', 'outputSpec', 'virtualInputPath', 'workerFsBlob', 'isCurrentOperation', 'abortError', 'chooseDefaultTrack', 'loadSource', 'extract', 'saveResult', 'setPhase', 'renderFormat', 'cancelCurrent', 'formatName', 'revokeResult'];
 const functions = functionNames.flatMap(name => lines.filter(line => new RegExp(`^\\s*(?:async )?function ${name}\\(`).test(line))).join('\n');
 const events = lines.find(line => line.trimStart().startsWith("$('#extractButton').onclick=extract;"));
 assert.ok(events, 'The app action handlers must be tested');
@@ -96,61 +96,101 @@ test('length limits cannot leave a trailing dot, split Unicode or drop the defau
   assert.ok(first.endsWith('-audio'));assert.ok(first.length<=110);assert.equal(h.context.normalizedOutputBase(),first);
 });
 
-test('reset is a native bilingual action associated with the next-run field',()=>{
-  assert.match(html,/<button\b[^>]*id="useVideoNameButton"[^>]*type="button"[^>]*data-i18n="useVideoName"[^>]*>/);
-  assert.match(html,/<input\b[^>]*id="outputFilename"[^>]*aria-describedby="[^"]*filenameHelp/);
+test('uncluttered filename field retains its name, extension and bilingual labels',()=>{
+  assert.doesNotMatch(html, /id="useVideoNameButton"|id="filenameHelp"|class="filename-actions"/);
+  assert.match(html, /<input\b[^>]*id="outputFilename"[^>]*aria-describedby="filenameExtension outputEstimate"/);
   const translations=vm.runInNewContext('('+translationCode+')');
   assert.deepEqual(Object.keys(translations.ja).sort(),Object.keys(translations.en).sort());
-  assert.equal(translations.en.useVideoName,'Use video name');assert.equal(translations.ja.useVideoName,'動画名を使う');
-  assert.match(translations.en.filenameHelp,/next extraction/i);assert.match(translations.en.helpFilename,/preview is unavailable/i);
+  assert.equal(translations.ja.outputFilename,'出力ファイル名');
+  assert.equal(translations.en.outputFilename,'Output filename');
+  assert.ok(!('useVideoName' in translations.ja));
+  assert.ok(!('filenameHelp' in translations.en));
+  assert.match(translations.en.helpFilename,/preview is unavailable/i);
 });
 
-test('reset restores the current source default, focuses the field and leaves settings alone',async()=>{
+test('source selection prefills an editable output name without a reset control',async()=>{
   const h=harness();await h.load('lecture.part1.mov');
+  assert.equal(h.element('#outputFilename').value,'lecture.part1-audio');
   h.state.outputMode='mp3';h.context.renderFormat();h.element('#outputFilename').value='custom.v2';
-  assert.equal(typeof h.element('#useVideoNameButton').onclick,'function');h.element('#useVideoNameButton').click();
-  assert.equal(h.element('#outputFilename').value,'lecture.part1-audio');assert.equal(h.element('#outputFilename').focusCount,1);
-  assert.equal(h.state.outputMode,'mp3');assert.equal(h.state.selectedIndex,7);assert.equal(h.state.mp3Channels,1);assert.equal(h.state.mp3BitrateKbps,256);assert.equal(h.element('#filenameExtension').textContent,'.mp3');assert.deepEqual(h.storage,[]);
+  assert.equal(h.context.normalizedOutputBase(),'custom.v2');
+  assert.equal(h.state.outputMode,'mp3');
+  assert.equal(h.state.selectedIndex,7);
+  assert.equal(h.state.mp3Channels,1);
+  assert.equal(h.state.mp3BitrateKbps,256);
+  assert.equal(h.element('#filenameExtension').textContent,'.mp3');
+  assert.deepEqual(h.storage,[]);
 });
 
-test('reset does not rename or revoke the completed result; next run uses the reset draft',async()=>{
-  const h=harness();await h.load('meeting.part1.mov');h.element('#outputFilename').value='custom.v2';await h.context.extract();
-  const old=h.state.result, oldURL=old.url;h.element('#useVideoNameButton').click();h.context.saveResult();
-  assert.equal(h.state.result,old);assert.equal(old.url,oldURL);assert.equal(h.downloads[0].name,'custom.v2.m4a');assert.deepEqual(h.revoked,[]);
-  await h.context.extract();h.context.saveResult();assert.equal(h.downloads[1].name,'meeting.part1-audio.m4a');assert.deepEqual(h.revoked,[oldURL]);
+test('editing the next filename does not rename or revoke an existing completed result',async()=>{
+  const h=harness();await h.load('meeting.part1.mov');
+  h.element('#outputFilename').value='custom.v2';await h.context.extract();
+  const old=h.state.result, oldURL=old.url;
+  h.element('#outputFilename').value='second.v3';
+  h.context.saveResult();
+  assert.equal(h.state.result,old);
+  assert.equal(old.url,oldURL);
+  assert.equal(h.downloads[0].name,'custom.v2.m4a');
+  assert.deepEqual(h.revoked,[]);
+  await h.context.extract();h.context.saveResult();
+  assert.equal(h.downloads[1].name,'second.v3.m4a');
+  assert.deepEqual(h.revoked,[oldURL]);
 });
 
-test('reset is disabled and programmatic invocation is harmless without an inspected source',async()=>{
-  const h=harness();
-  for(const phase of ['empty','inspecting','error']){h.context.setPhase(phase);h.element('#outputFilename').value='keep';assert.equal(h.element('#useVideoNameButton').disabled,true);h.context.useVideoName();assert.equal(h.element('#outputFilename').value,'keep');}
-  h.setReport({format:{videoStreamCount:1,audioStreamCount:0},audioStreams:[]});await h.load('silent.mov');assert.equal(h.element('#useVideoNameButton').disabled,true);
+test('filename remains an input-only field, with no secondary reset UI',async()=>{
+  const h=harness();h.context.setPhase('empty');
+  assert.equal(h.element('#outputFilename').disabled,false);
+  assert.equal(h.element('#outputFilename').onclick,undefined);
+  h.setReport({format:{videoStreamCount:1,audioStreamCount:0},audioStreams:[]});
+  await h.load('silent.mov');
+  assert.equal(h.element('#outputFilename').value,'silent-audio');
+  h.element('#outputFilename').value='custom';
+  assert.equal(h.context.normalizedOutputBase(),'custom');
 });
 
-test('reset stays disabled through preparation and processing, then recovers after cancel',async()=>{
-  const h=harness();await h.load('meeting.mov');h.element('#outputFilename').value='keep.v2';
+test('filename edits are locked during preparation and processing, then unlocked after cancel',async()=>{
+  const h=harness();await h.load('meeting.mov');
+  h.element('#outputFilename').value='keep.v2';
   let resolvePreparation;h.setGetRunner(()=>new Promise(resolve=>{resolvePreparation=resolve;}));
-  const promise=h.context.extract();assert.equal(h.state.phase,'preparing');assert.equal(h.element('#useVideoNameButton').disabled,true);
-  h.context.useVideoName();assert.equal(h.element('#outputFilename').value,'keep.v2');h.context.cancelCurrent();resolvePreparation(h.runner);await promise;
-  assert.equal(h.element('#useVideoNameButton').disabled,false);
+  const promise=h.context.extract();
+  assert.equal(h.state.phase,'preparing');assert.equal(h.element('#outputFilename').disabled,true);
+  h.context.cancelCurrent();resolvePreparation(h.runner);await promise;
+  assert.equal(h.element('#outputFilename').disabled,false);
   let started;const processingStarted=new Promise(resolve=>{started=resolve;});
-  h.setGetRunner(async()=>h.runner);h.setRun(options=>new Promise((resolve,reject)=>{options.signal.addEventListener('abort',()=>reject(h.context.abortError()));started();}));
-  const processing=h.context.extract();await processingStarted;assert.equal(h.state.phase,'processing');assert.equal(h.element('#useVideoNameButton').disabled,true);
-  h.context.useVideoName();assert.equal(h.element('#outputFilename').value,'keep.v2');h.context.cancelCurrent();await processing;assert.equal(h.element('#useVideoNameButton').disabled,false);
+  h.setGetRunner(async()=>h.runner);
+  h.setRun(options=>new Promise((resolve,reject)=>{options.signal.addEventListener('abort',()=>reject(h.context.abortError()));started();}));
+  const processing=h.context.extract();await processingStarted;
+  assert.equal(h.state.phase,'processing');assert.equal(h.element('#outputFilename').disabled,true);
+  h.context.cancelCurrent();await processing;
+  assert.equal(h.element('#outputFilename').disabled,false);
+  assert.equal(h.element('#outputFilename').value,'keep.v2');
 });
 
-test('a failed retry preserves the completed name and URL and permits resetting the next draft',async()=>{
-  const h=harness();await h.load('meeting.mov');h.element('#outputFilename').value='completed.v2';await h.context.extract();const old=h.state.result,oldURL=old.url;
-  h.setRun(async()=>{throw new Error('synthetic failure');});h.element('#outputFilename').value='attempt.v3';await h.context.extract();
-  assert.equal(h.state.result,old);assert.equal(h.element('#useVideoNameButton').disabled,false);h.element('#useVideoNameButton').click();h.context.saveResult();
-  assert.equal(h.downloads[0].name,'completed.v2.m4a');assert.equal(h.downloads[0].href,oldURL);assert.deepEqual(h.revoked,[]);
+test('failed retry retains prior completed result while keeping the next draft editable',async()=>{
+  const h=harness();await h.load('meeting.mov');h.element('#outputFilename').value='completed.v2';
+  await h.context.extract();const old=h.state.result,oldURL=old.url;
+  h.setRun(async()=>{throw new Error('synthetic failure');});
+  h.element('#outputFilename').value='attempt.v3';await h.context.extract();
+  assert.equal(h.state.result,old);
+  assert.equal(h.element('#outputFilename').disabled,false);
+  assert.equal(h.element('#outputFilename').value,'attempt.v3');
+  h.context.saveResult();
+  assert.equal(h.downloads[0].name,'completed.v2.m4a');
+  assert.equal(h.downloads[0].href,oldURL);
+  assert.deepEqual(h.revoked,[]);
 });
 
-test('changing sources replaces the default; copy and conversion keep the actual selected stream',async()=>{
-  const h=harness();await h.load('first.part.mov');h.element('#outputFilename').value='old custom';await h.load('second.part.mp4');
-  h.element('#outputFilename').value='new custom';h.element('#useVideoNameButton').click();assert.equal(h.element('#outputFilename').value,'second.part-audio');
-  for(const mode of ['copy','m4a','mp3','wav']){h.state.outputMode=mode;h.context.renderFormat();await h.context.extract();const args=h.calls.at(-1).args;
-    assert.equal(args.streamIndex,7);assert.equal(args.kind,mode==='copy'?'copy':'transcode');assert.equal(args.format,mode==='copy'?'m4a':mode);
-    if(mode==='mp3'){assert.equal(args.bitrateKbps,256);assert.equal(args.channels,1);}assert.equal(h.state.result.name,`second.part-audio.${mode==='copy'?'m4a':mode}`);
+test('changing sources refills the default; copy and conversion keep the actual selected stream',async()=>{
+  const h=harness();await h.load('first.part.mov');
+  h.element('#outputFilename').value='old custom';await h.load('second.part.mp4');
+  assert.equal(h.element('#outputFilename').value,'second.part-audio');
+  for(const mode of ['copy','m4a','mp3','wav']){
+    h.state.outputMode=mode;h.context.renderFormat();await h.context.extract();
+    const args=h.calls.at(-1).args;
+    assert.equal(args.streamIndex,7);
+    assert.equal(args.kind,mode==='copy'?'copy':'transcode');
+    assert.equal(args.format,mode==='copy'?'m4a':mode);
+    if(mode==='mp3'){assert.equal(args.bitrateKbps,256);assert.equal(args.channels,1);}
+    assert.equal(h.state.result.name,`second.part-audio.${mode==='copy'?'m4a':mode}`);
   }
 });
 
