@@ -11,6 +11,7 @@ const disclosureSelector = "#helpDialog .build-details details";
 
 async function prepareApp(page,width,label){
  assert.equal(await page.locator('.mobile-tabs').isVisible(),width<=560,label+': functional page tabs');
+ assert.equal(await page.evaluate(()=>matchMedia('(pointer:coarse)').matches),width<=560,label+': simulate touch-pointer behavior on mobile widths');
  if(width<=560)assert.ok(await page.locator('.mobile-tabs').evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;}),label+': functional tabs fit');
 }
 async function smoke(page,results,file){
@@ -53,7 +54,8 @@ async function smoke(page,results,file){
  await page.locator('#wavePlayButton').click();
  assert.equal(await page.locator('#waveAudio').evaluate(a=>a.paused),true,'audio preview can be paused');
  const bounds=await page.locator('#wavePlot').boundingBox();
- await page.locator('#wavePlot').click({position:{x:bounds.width*.35,y:60}});
+ if(await page.evaluate(()=>matchMedia('(pointer:coarse)').matches))await page.touchscreen.tap(Math.round(bounds.x+bounds.width*.35),Math.round(bounds.y+60));
+ else await page.locator('#wavePlot').click({position:{x:bounds.width*.35,y:60}});
  await page.locator('#waveMarkStart').click();
  assert.ok(await page.locator('#trimStart').inputValue()!=='0:00','set start from selected playback position');
  await page.locator('#waveEndHandle').press('ArrowLeft');
@@ -168,7 +170,7 @@ async function main() {
     for (const file of ['dist/index.html', 'dist/index.self-extract.html', 'video-audio-extractor.html']) {
       for (const language of ['ja', 'en']) {
         for (const [width, height] of [[1360, 900], [561, 568], [560, 568], [360, 640], [390,844], [320, 568], [393, 252]]) {
-          const context = await browser.newContext({ viewport: { width, height }, locale: language, reducedMotion: 'reduce' });
+          const context = await browser.newContext({ viewport: { width, height }, locale: language, reducedMotion: 'reduce', hasTouch: width <= 560, isMobile: width <= 560 });
           const page = await context.newPage();
           const errors = [], requests = [];
           page.on('pageerror', error => errors.push(error.message));
