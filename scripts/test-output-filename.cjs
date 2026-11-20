@@ -416,7 +416,7 @@ test('the cached editing path switches progress to determinate and reaches 100%'
   h.context.renderFormat();await h.context.extract();
   assert.ok(removed.includes('indeterminate'),'WAV PCM pass must leave indeterminate mode');
   assert.equal(h.element('#progressBar').style.width,'100%','cached editing reaches 100%');
-  assert.equal(progress.attributes['aria-valuenow'],'100');
+  assert.equal(progress.attributes['aria-valuenow'],undefined,'completed state clears busy progress ARIA value');
 });
 
 test('runtime privacy and preference boundaries remain unchanged',()=>{
