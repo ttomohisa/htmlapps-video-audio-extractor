@@ -229,6 +229,8 @@ Before stable release, stream-copy a multi-GB video in desktop Chrome/Edge and v
 
 For re-encoded output, estimate size approximately from bitrate × duration. For stream copy, use source audio bitrate × duration when available. Always label estimates as approximate.
 
+Display the currently selected encoding method (e.g. `PCM 16bit`) and the approximate size (e.g. `目安 1.3 MB`) together in a horizontally arranged facts row immediately before/above the Extract audio action, on both desktop and mobile. The output filename remains in a separate full-width field; do not align the estimate beside that input or separate the two facts across the width. Keep both fact IDs and dynamic formatting intact, including when one is unavailable. Prefer one line, with graceful wrapping only on constrained widths; maintain an accessible localized group label and the existing 8px spacing scale.
+
 ## 13. Runtime network and dependency pinning
 
 The completed standalone HTML performs no runtime external request.
