@@ -258,6 +258,18 @@ test('time entry accepts m:ss and h:mm:ss but rejects malformed input',()=>{
   for(const value of ['','-1','1:60','1:03:69','1:2:3:4','abc','1:xx'])assert.equal(h.context.parseAudioTime(value),null,value);
 });
 
+test('turning off edits restores the previously selected audio output',async()=>{
+  const h=harness();await h.load('meeting.mov');
+  h.state.outputMode='mp3';h.context.renderFormat();
+  h.state.trimMode='range';h.element('#trimStart').value='0:00';h.element('#trimEnd').value='0:01';
+  h.context.renderFormat();
+  assert.equal(h.state.outputMode,'wav');
+  assert.equal(h.state.preEditOutputMode,'mp3');
+  h.state.trimMode='full';h.context.renderFormat();
+  assert.equal(h.state.outputMode,'mp3');
+  assert.equal(h.state.preEditOutputMode,null);
+});
+
 test('time-range edit cuts precisely to WAV and increases gain without changing the input',async()=>{
   const h=harness();await h.load('meeting.mov');
   const track=h.state.report.audioStreams.find(x=>x.index===7);
