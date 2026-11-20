@@ -1,5 +1,23 @@
 # Video Audio Extractor regression checklist
 
+## v1.1.0 release-candidate deep review (2026-11-21)
+
+Automated checks:
+
+- [x] Stream-copy Opus, waveform-generated and peak-normalized PCM16 WAV, and *real* MP3/M4A transcoding from the selected input verified through browser decode and downloaded output on readable and self-extract single-HTML builds.
+- [x] Cached WAV editing removes indeterminate progress and finishes at 100%, clearing busy-state ARIA when complete.
+- [x] Silent audio normalization keeps samples silent; +6 dB amplification clamps to PCM16 bounds rather than wrapping.
+- [x] Malformed and over-budget PCM WAV input is rejected, and aborted PCM processing exits without output.
+- [x] Cancelling a waveform preparation, retrying it, and replacing the source before an old waveform completes cannot commit stale audio.
+- [x] Existing privacy/network/CSP, filename, error-state, localization, source-duration, 8px-spacing and help-dialog checks are still part of the source, readable, root and self-extract builds.
+
+Manual / release follow-up:
+
+- [ ] Physically test iOS Safari and Android Chrome (touch/seek/playback and longer real recordings), not covered by desktop Chromium simulation.
+- [ ] Refresh representative README screenshots for the substantially changed v1.1.0 UI before publication if current images no longer match.
+- [ ] Confirm the release-on-merge workflow creates v1.1.0 tag and GitHub Release on the actual user merge, and verify attachments after publication; these events cannot run on an open PR.
+
+
 ## v1.1.0 balanced intro, icon and simplified Help
 
 - [x] Introductory text begins with 8px top spacing on PC/mobile instead of zero padding; remains hidden after source selection on mobile.
