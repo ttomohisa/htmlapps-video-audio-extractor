@@ -2,6 +2,11 @@
 
 ## [1.1.0] - 2026-11-21
 
+### Waveform selection
+- Generate a local PCM-derived waveform on demand. Play/pause, click/tap seek, set start/end at playhead, drag range handles and adjust sliders with the keyboard on mobile and desktop.
+- Reuse WAV preview data during export, cancel stale load operations, and release preview Blob URLs when changing sources/tracks or leaving range mode.
+- Shorten the WAV-only editing note without the extra warning sentence.
+
 ### Added
 - Extract a selected time range using seconds, m:ss or h:mm:ss inputs, with an optional open-ended End time.
 - Adjust audio gain by -12, -6, +3 or +6 dB, or normalize the resulting WAV samples to approximately -1 dBFS peak.
