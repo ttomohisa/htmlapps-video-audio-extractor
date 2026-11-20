@@ -12,8 +12,10 @@ let html = fs.readFileSync(inputPath, 'utf8');
 const payload = html.match(/<script\s+id="self-extract-payload"\s+type="application\/octet-stream">([A-Za-z0-9+/=\r\n]+)<\/script>/);
 if (payload) html = gunzipSync(Buffer.from(payload[1], 'base64')).toString('utf8');
 const lines = html.split('\n');
-const functionNames = ['safeBase', 'defaultOutputBase', 'sourceAudioDuration', 'editsEnabled', 'parseAudioTime', 'editConfiguration', 'editWavPcm16', 'normalizedOutputBase', 'selectedTrack', 'outputSpec', 'virtualInputPath', 'workerFsBlob', 'isCurrentOperation', 'abortError', 'chooseDefaultTrack', 'loadSource', 'extract', 'saveResult', 'setPhase', 'renderFormat', 'cancelCurrent', 'formatName', 'revokeResult'];
+const functionNames = ['safeBase', 'defaultOutputBase', 'sourceAudioDuration', 'normalizedOutputBase', 'selectedTrack', 'outputSpec', 'virtualInputPath', 'workerFsBlob', 'isCurrentOperation', 'abortError', 'chooseDefaultTrack', 'loadSource', 'extract', 'saveResult', 'setPhase', 'renderFormat', 'cancelCurrent', 'formatName', 'revokeResult'];
 const functions = functionNames.flatMap(name => lines.filter(line => new RegExp(`^\\s*(?:async )?function ${name}\\(`).test(line))).join('\n');
+const editingHelpers = html.match(/    function editsEnabled\(\)[\s\S]*?(?=    function bitrateText\()/)?.[0];
+assert.ok(editingHelpers,'editing helper functions present');
 const events = lines.find(line => line.trimStart().startsWith("$('#extractButton').onclick=extract;"));
 assert.ok(events, 'The app action handlers must be tested');
 const translationCode = html.match(/const translations=(\{[\s\S]*?\n    \});/)[1];
@@ -44,7 +46,7 @@ function harness() {
     bytesText:String,sourceFormatLabel:()=> 'MP4',t:s=>s,inspectErrorMessage:String,processErrorMessage:String,diagnosticText:String,
     writeStorage:(...args)=>storage.push(args),storageKeys:{outputMode:'output-mode',aacBitrate:'aac-bitrate',mp3Bitrate:'mp3-bitrate',mp3Channels:'mp3-channels'}
   });
-  vm.runInContext(functions + '\n' + events, context, {filename:inputPath});
+  vm.runInContext(editingHelpers + '\n' + functions + '\n' + events, context, {filename:inputPath});
   const load = async name => context.loadSource(new File(['synthetic'],name,{type:'video/mp4'}));
   return {context,state,downloads,calls,element,load,revoked,storage,runner,setRun:fn=>{run=fn;},setGetRunner:fn=>{getRunner=fn;},setReport:value=>{currentReport=value;}};
 }
