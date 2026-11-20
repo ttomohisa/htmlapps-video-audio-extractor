@@ -466,6 +466,14 @@ Prefer reliable completion of one task over adding features.
 - If resizing hides or removes the confirmation opener, return focus to the active visible mobile tab, or the visible Help button as a final fallback, without switching pages or changing media state.
 - The narrow header wraps its complete localized name and version while retaining the language and Help controls. Preserve the existing decorative shared shield and canonical app artwork.
 
+## v1.0.5 compact UI and post-merge release
+
+- Keep the major workflow panels recognizable on desktop/mobile, but replace nested card borders around audio metadata, format options, settings, preview metadata and source selection with spacing, separators and selected-state emphasis.
+- Use the same down-arrow-to-tray SVG motif as PDF Fill & Sign for the video drop zone. Do not change the canonical favicon/brand icon.
+- Hide the informational fully-local-processing badge at the mobile page-tab breakpoint (560px). Once a source file is accepted, hide the introductory description beneath the hero title on mobile; leave the title and desktop description intact.
+- Help Basics must explain how to choose a video/track, the distinction between unchanged extraction and conversion, and how to save when preview is unavailable. Remove nonessential instructions about how to dismiss dialogs. Keep functional Esc/backdrop/Close support.
+- On a merged PR into main, validate/build the production one-file artifacts, then create an immutable v<version> tag and GitHub Release with readable and self-extract HTML assets. Do not create duplicate releases for a previously published version.
+
 ## v1.0.5 playback, localization and processing consistency
 
 - Rendering a completed result again (including on language changes or save) must not reset the audio element's current source or playback position. Unsupported-preview guidance remains visible and localized after a language change.
