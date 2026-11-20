@@ -23,7 +23,10 @@ async function smoke(page,results,file){
  await page.locator('#fileInput').setInputFiles({name:'synthetic-video.webm',mimeType:'video/webm',buffer:Buffer.from(encoded.split(',')[1],'base64')});await page.waitForFunction(()=>!document.querySelector('#extractButton').disabled,null,{timeout:60000});
  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('has-source')),true,'selected video activates compact intro');
  assert.equal(await page.locator('#audioSummary .summary-item').count(),4,'audio metadata has all four values');
+ await page.locator('.mobile-tab[data-page="audio"]').click();
+ assert.equal(await page.locator('#audioPanel').isVisible(),true,'audio summary is visible before measuring text');
  assert.ok(await page.locator('#audioSummary .summary-item').first().evaluate(el=>{const s=getComputedStyle(el),item=el.getBoundingClientRect(),label=el.querySelector('.summary-label')?.getBoundingClientRect();return s.paddingLeft==='16px'&&s.paddingRight==='16px'&&label?.left-item.left>=15;}),'audio summary labels are inset on the smartphone');
+ await page.locator('.mobile-tab[data-page="format"]').click();
  assert.equal(await page.locator('.page-intro').isVisible(),false,'mobile intro disappears entirely after choosing video');
  await page.locator('#outputFilename').fill('mobile-help-audio');await page.locator('#extractButton').click();await page.waitForFunction(()=>!document.querySelector('#saveButton').disabled,null,{timeout:60000});
  const pending=page.waitForEvent('download');await page.locator('#saveButton').click();const download=await pending;assert.equal(download.suggestedFilename(),'mobile-help-audio.opus');const target=path.join(results,file.includes('self-extract')?'synthetic-loader.opus':'synthetic-readable.opus');await download.saveAs(target);const bytes=fs.readFileSync(target);assert.ok(bytes.length>100);assert.equal(bytes.subarray(0,4).toString(),'OggS');
