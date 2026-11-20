@@ -22,6 +22,8 @@ async function smoke(page,results,file){
  });
  await page.locator('#fileInput').setInputFiles({name:'synthetic-video.webm',mimeType:'video/webm',buffer:Buffer.from(encoded.split(',')[1],'base64')});await page.waitForFunction(()=>!document.querySelector('#extractButton').disabled,null,{timeout:60000});
  assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('has-source')),true,'selected video activates compact intro');
+ assert.equal(await page.locator('#audioSummary .summary-item').count(),4,'audio metadata has all four values');
+ assert.ok(await page.locator('#audioSummary .summary-item').first().evaluate(el=>{const s=getComputedStyle(el),item=el.getBoundingClientRect(),label=el.querySelector('.summary-label')?.getBoundingClientRect();return s.paddingLeft==='16px'&&s.paddingRight==='16px'&&label?.left-item.left>=15;}),'audio summary labels are inset on the smartphone');
  assert.equal(await page.locator('.page-intro').isVisible(),false,'mobile intro disappears entirely after choosing video');
  await page.locator('#outputFilename').fill('mobile-help-audio');await page.locator('#extractButton').click();await page.waitForFunction(()=>!document.querySelector('#saveButton').disabled,null,{timeout:60000});
  const pending=page.waitForEvent('download');await page.locator('#saveButton').click();const download=await pending;assert.equal(download.suggestedFilename(),'mobile-help-audio.opus');const target=path.join(results,file.includes('self-extract')?'synthetic-loader.opus':'synthetic-readable.opus');await download.saveAs(target);const bytes=fs.readFileSync(target);assert.ok(bytes.length>100);assert.equal(bytes.subarray(0,4).toString(),'OggS');
@@ -94,6 +96,9 @@ async function main() {
               assert.ok(heroSpacing.bottom >= 0 && heroSpacing.bottom <= 16, label + ': intro sits close above first panel: ' + JSON.stringify(heroSpacing));
             }
             assert.equal(await page.locator('.page-intro h1').count(),0,label+': no visible hero title element');
+            assert.equal(await page.locator('#useVideoNameButton').count(),0,label+': no unnecessary source-name reset button');
+            assert.equal(await page.locator('#filenameHelp').count(),0,label+': no redundant filename helper text');
+            assert.ok(await page.evaluate(()=>{const host=document.querySelector('#audioSummary');const item=document.createElement('div');item.className='summary-item';item.innerHTML='<span class="summary-label">Codec</span>';host.append(item);const style=getComputedStyle(item);const rect=item.getBoundingClientRect(),label=item.querySelector('span').getBoundingClientRect();const okay=style.paddingLeft==='16px'&&style.paddingRight==='16px'&&label.left-rect.left>=15;item.remove();return okay;}),label+': audio metadata label inset on desktop and mobile');
             assert.equal(await page.locator('main > h1.sr-only').count(),1,label+': retained semantic page heading');
             assert.ok(await page.locator('#videoPanel').evaluate(el=>getComputedStyle(el).boxShadow==='none'&&getComputedStyle(el).borderRadius==='8px'),label+': quiet workflow panel styling');
             assert.equal(await page.locator('#dropZone .drop-icon svg').count(),1,label+': download tray icon');
