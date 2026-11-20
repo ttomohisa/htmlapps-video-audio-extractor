@@ -223,6 +223,19 @@ test('missing track duration falls back to positive container duration only', as
   tr.duration=Number.NaN;h.state.report.format.duration=-3;assert.equal(h.context.sourceAudioDuration(tr),null);
 });
 
+test('encoding method and size estimate occupy one row next to Extract audio',async()=>{
+  assert.match(html, /<div class="action-row"><div class="output-facts"[^>]*><span class="estimate" id="methodSummary"><\/span><span class="estimate" id="outputEstimate"><\/span><\/div><button class="button primary" id="extractButton"/);
+  const filename=html.match(/<div class="filename-row">([\s\S]*?)<div class="action-row">/);
+  assert.ok(filename && !filename[1].includes('id="outputEstimate"'), 'size estimate is not beside filename');
+  const h=harness();await h.load('meeting.mov');
+  h.state.outputMode='wav';h.context.renderFormat();
+  assert.equal(h.element('#methodSummary').textContent,'wavMethod');
+  assert.equal(h.element('#outputEstimate').textContent,'approx');
+  h.state.outputMode='mp3';h.context.renderFormat();
+  assert.equal(h.element('#methodSummary').textContent,'mp3Method');
+  assert.equal(h.element('#outputEstimate').textContent,'approx');
+});
+
 test('runtime privacy and preference boundaries remain unchanged',()=>{
   assert.match(html,/connect-src 'none'/);assert.match(html,/workerfs:true/);assert.doesNotMatch(functions,/\.arrayBuffer\(/);
   const keys=vm.runInNewContext('('+html.match(/const storageKeys=(\{[^\n]+\});/)[1]+')');assert.equal(Object.keys(keys).length,5);
