@@ -30,7 +30,7 @@ GitHub Pages delivers the initial HTML. After it loads, video inspection, audio 
 - **Use one HTML file** — FFmpeg JavaScript, WebAssembly, the browser runtime, and the app UI are embedded in the standalone build.
 - **Work offline after obtaining the HTML** — The standalone file can be opened directly with `file://` in supported browsers.
 - **No runtime external connection** — The generated app uses `connect-src 'none'` and contains no CDN, analytics, telemetry, remote font, or runtime update request.
-- **Japanese / English UI** — Both languages are included in the same HTML, with a desktop and smartphone workflow.
+- **Japanese / English UI** — Both languages are included in the same HTML, with a desktop and smartphone workflow. The fully local processing label is hidden in the compact mobile layout, and the intro description collapses after a file is selected.
 
 ## Quick start
 
@@ -108,6 +108,8 @@ The repository includes a workflow that rebuilds the standalone HTML, runs repos
 4. After a successful deployment, the app is available at `https://ttomohisa.github.io/htmlapps-video-audio-extractor/`.
 
 The workflow still validates and uploads the standalone build artifact when Pages has not been enabled yet.
+
+When a pull request is merged into `main`, the `release-on-merge.yml` workflow verifies and rebuilds the standalone files and publishes a `v<version>` GitHub tag and Release, attaching the readable `video-audio-extractor.html` and smaller `video-audio-extractor.self-extract.html` variants. The version is read from `app.config.json`; merges that reuse an existing tag do not create another release.
 
 ## Development and build layout
 
