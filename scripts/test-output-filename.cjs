@@ -21,7 +21,7 @@ assert.ok(events, 'The app action handlers must be tested');
 const translationCode = html.match(/const translations=(\{[\s\S]*?\n    \});/)[1];
 
 function harness() {
-  const elements = new Map(), downloads = [], calls = [], revoked = [], storage = [];
+  const elements = new Map(), downloads = [], calls = [], revoked = [], storage = [], blobs = [];
   let currentReport = {format:{name:'mov,mp4',duration:2,videoStreamCount:1,audioStreamCount:2},audioStreams:[
     {index:2,title:'First',duration:2,channels:2,sampleRate:48000,codec:{name:'opus',bitRate:128000},copy:{supported:true,format:'opus',extension:'opus'},transcode:{supported:true,formats:['m4a','mp3','wav']}},
     {index:7,default:true,title:'Selected',language:'eng',duration:2,channels:6,sampleRate:48000,codec:{name:'aac',bitRate:192000},copy:{supported:true,format:'m4a',extension:'m4a'},transcode:{supported:true,formats:['m4a','mp3','wav']}}
@@ -39,7 +39,7 @@ function harness() {
   let getRunner = async()=>runner;
   let url = 0;
   const context = vm.createContext({state,$:element,$$:()=>[],Blob,File,AbortController,Uint8Array,Date,Number,Error,TypeError,
-    console:{error(){}},setTimeout,matchMedia:()=>({matches:false}),URL:{createObjectURL:()=>`blob:synthetic-${++url}`,revokeObjectURL:u=>revoked.push(u)},
+    console:{error(){}},setTimeout,matchMedia:()=>({matches:false}),URL:{createObjectURL:blob=>{const uri=`blob:synthetic-${++url}`;blobs.push({uri,blob});return uri;},revokeObjectURL:u=>revoked.push(u)},
     document:{body:{append(){},classList:{add(){},remove(){}}},createElement(tag){assert.equal(tag,'a');return {href:'',download:'',click(){downloads.push({href:this.href,name:this.download});},remove(){}};}},
     BrowserFFmpeg:{videoAudioExtractorInspectArgs:x=>({kind:'inspect',...x}),videoAudioExtractorCopyArgs:x=>({kind:'copy',...x}),videoAudioExtractorTranscodeArgs:x=>({kind:'transcode',...x}),decodeJsonOutput:()=>currentReport},
     getRunner:()=>getRunner(),renderReport(){context.renderFormat();},renderResult(){},unlockTabs(){},setMobilePage(){},announce(){},showToast(){},setSourceError(){},clearAudioPreview(){},navigateToStep(){},
@@ -48,7 +48,7 @@ function harness() {
   });
   vm.runInContext(editingHelpers + '\n' + functions + '\n' + events, context, {filename:inputPath});
   const load = async name => context.loadSource(new File(['synthetic'],name,{type:'video/mp4'}));
-  return {context,state,downloads,calls,element,load,revoked,storage,runner,setRun:fn=>{run=fn;},setGetRunner:fn=>{getRunner=fn;},setReport:value=>{currentReport=value;}};
+  return {context,state,downloads,calls,element,load,revoked,storage,blobs,runner,setRun:fn=>{run=fn;},setGetRunner:fn=>{getRunner=fn;},setReport:value=>{currentReport=value;}};
 }
 
 test('baseline: source selection uses the actual default stream index and WORKERFS', async()=>{
@@ -236,6 +236,66 @@ test('encoding method and size estimate occupy one row next to Extract audio',as
   h.state.outputMode='mp3';h.context.renderFormat();
   assert.equal(h.element('#methodSummary').textContent,'mp3Method');
   assert.equal(h.element('#outputEstimate').textContent,'approx');
+});
+
+
+function syntheticWav(rate=8000,channels=1,seconds=2,amplitude=1000){
+  const frames=Math.round(rate*seconds),bytes=frames*channels*2;
+  const out=new Uint8Array(44+bytes),v=new DataView(out.buffer);
+  for(const [at,tag] of [[0,'RIFF'],[8,'WAVE'],[12,'fmt '],[36,'data']])for(let i=0;i<tag.length;i++)out[at+i]=tag.charCodeAt(i);
+  v.setUint32(4,36+bytes,true);v.setUint32(16,16,true);v.setUint16(20,1,true);
+  v.setUint16(22,channels,true);v.setUint32(24,rate,true);v.setUint32(28,rate*channels*2,true);
+  v.setUint16(32,channels*2,true);v.setUint16(34,16,true);v.setUint32(40,bytes,true);
+  for(let i=0;i<frames*channels;i++)v.setInt16(44+i*2,amplitude,true);
+  return out;
+}
+
+test('time entry accepts m:ss and h:mm:ss but rejects malformed input',()=>{
+  const h=harness();
+  assert.equal(h.context.parseAudioTime('5:00'),300);
+  assert.equal(h.context.parseAudioTime('1:02:03.5'),3723.5);
+  assert.equal(h.context.parseAudioTime('20.25'),20.25);
+  for(const value of ['','-1','1:60','1:03:69','1:2:3:4','abc','1:xx'])assert.equal(h.context.parseAudioTime(value),null,value);
+});
+
+test('time-range edit cuts precisely to WAV and increases gain without changing the input',async()=>{
+  const h=harness();await h.load('meeting.mov');
+  const track=h.state.report.audioStreams.find(x=>x.index===7);
+  track.channels=1;track.sampleRate=8000;
+  const original=syntheticWav();
+  h.setRun(async options=>({files:[{name:options.outputs[0],data:original}]}));
+  h.state.trimMode='range';h.state.gainMode='6';
+  h.element('#trimStart').value='0:00.25';h.element('#trimEnd').value='0:00.75';
+  h.context.renderFormat();
+  assert.equal(h.state.outputMode,'wav');
+  assert.equal(h.context.outputSpec().mode,'edit');
+  assert.equal(h.element('#editError').hidden,true);
+  await h.context.extract();
+  assert.equal(h.calls.at(-1).args.format,'wav');
+  assert.equal(h.state.result.name,'meeting-audio.wav');
+  assert.equal(h.state.result.duration,.5);
+  const bytes=new Uint8Array(await h.blobs.at(-1).blob.arrayBuffer()),view=new DataView(bytes.buffer);
+  assert.equal(bytes.length,44+8000);
+  assert.equal(view.getUint32(24,true),8000);
+  assert.ok(view.getInt16(44,true)>1900&&view.getInt16(44,true)<2100);
+  assert.equal(new DataView(original.buffer).getInt16(44,true),1000,'source untouched');
+});
+
+test('peak normalization reaches -1 dBFS and rejects invalid or oversize ranges',async()=>{
+  const h=harness();await h.load('meeting.mov');
+  const tr=h.state.report.audioStreams.find(x=>x.index===7);tr.channels=1;tr.sampleRate=8000;
+  h.setRun(async options=>({files:[{name:options.outputs[0],data:syntheticWav(8000,1,2,1000)}]}));
+  h.state.gainMode='normalize';
+  h.context.renderFormat();assert.equal(h.element('#editError').hidden,true);
+  await h.context.extract();
+  const wave=new Uint8Array(await h.blobs.at(-1).blob.arrayBuffer());
+  const value=new DataView(wave.buffer).getInt16(44,true);
+  assert.ok(value>=29100&&value<=29300,'normalized peak near -1 dBFS');
+  h.state.trimMode='range';h.element('#trimStart').value='1:58';
+  h.element('#trimEnd').value='1:00';
+  assert.equal(h.context.editConfiguration(tr).error,'trimInvalid');
+  tr.duration=100000;
+  assert.equal(h.context.editConfiguration(tr).error,'editTooLarge');
 });
 
 test('runtime privacy and preference boundaries remain unchanged',()=>{
