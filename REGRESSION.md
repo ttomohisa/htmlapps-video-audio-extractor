@@ -1,5 +1,12 @@
 # Video Audio Extractor regression checklist
 
+## v1.1.0 simplified range and waveform UX
+
+- [x] A loaded source presets End to the selected audio track's duration; on a different track the default updates.
+- [x] Choosing Set a time range immediately starts waveform preparation, without a separate Show waveform step; a retry control is reserved for failed or canceled loading.
+- [x] The preview's decoded duration replaces the untouched initial End, but manually selected end markers and typed times are preserved.
+- [x] No obsolete waveform/time hint remains in Japanese/English, and the intro paragraph has no extra top padding on PC/mobile.
+
 ## v1.1.0 waveform-assisted selection
 
 Automated checks:
