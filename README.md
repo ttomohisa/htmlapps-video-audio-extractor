@@ -26,7 +26,7 @@ GitHub Pages delivers the initial HTML. After it loads, video inspection, audio 
 - **Extract without re-encoding when supported** — AAC → M4A, ALAC → M4A, MP3 → MP3, Opus → OPUS, Vorbis → OGG, and FLAC → FLAC use verified stream-copy paths.
 - **Convert to common audio formats** — Convert to M4A/AAC, MP3 with LAME 4.0, or uncompressed PCM16 WAV.
 - **Choose the audio track you need** — Multi-audio files expose language, title, and default-track metadata when available.
-- **Extract only a time range** — Enter the start and optional end time in the Format step (e.g. `5:00` to `8:30`); edited output is currently WAV.
+- **Extract only a time range** — Show the waveform to play and choose start/end using draggable handles, playhead markers or manual time fields. Edited output is WAV.
 - **Adjust or normalize volume** — Choose -12, -6, +3 or +6 dB, or peak-normalize to -1 dBFS. Edited output is currently WAV; this is peak normalization, not LUFS loudness matching.
 - **Avoid an initial full-file JavaScript copy** — The original `File` / `Blob` is mounted through WORKERFS instead of being read in full with `File.arrayBuffer()`.
 - **Use one HTML file** — FFmpeg JavaScript, WebAssembly, the browser runtime, and the app UI are embedded in the standalone build.
@@ -67,7 +67,7 @@ This wrapper restores the normal standalone HTML locally with `DecompressionStre
 2. Wait for local inspection to finish. If multiple audio tracks are present, choose the track you want.
 3. Choose the output method.
 4. For M4A or MP3, choose the available bitrate. MP3 also offers mono or stereo output.
-5. To trim, choose **Set a time range** and enter a start and end time. To change volume, select a dB adjustment or **Normalize peak to -1 dBFS**. Either edit switches the result to WAV only.
+5. To trim, choose **Set a time range** → **Show waveform**. Play the audio, tap/click to seek, mark start and end at the playhead or drag the handles. Time entry remains available. To change volume, select a dB adjustment or **Normalize peak to -1 dBFS**. Either edit switches the result to WAV only.
 6. The output filename is filled automatically from the selected video. Edit it if needed, then select **Extract audio**.
 7. Preview the result when the browser supports the generated audio format, then save it.
 8. Use **Change settings and extract again** to return to the Format section without replacing the source video.
@@ -78,7 +78,7 @@ If you open a new video while a completed result has not been saved, the app ask
 
 ## Advanced time and volume editing
 
-Time-range and volume editing first decode the selected audio stream into temporary PCM16 WAV using the embedded FFmpeg WASM core. The browser then cuts the requested PCM samples and applies a fixed gain or peak normalization; only the modified WAV is saved. The source video is still read with WORKERFS, but **the complete decoded audio is temporarily held in memory**. This is why editing is limited to input audio with one or two channels, a known duration and a predicted temporary WAV size up to **128 MiB on smartphones** or **256 MiB on desktops**. Longer recordings may exceed these limits even when only a short segment is requested. Without edits, normal stream-copy and M4A/MP3/WAV conversion do not have this extra PCM-memory limit.
+Time-range and volume editing first decode the selected audio stream into temporary PCM16 WAV using the embedded FFmpeg WASM core. Showing the waveform uses this decoded audio for local playback and seeks; exporting the edited selection reuses that audio without a second decode. If waveform loading is unavailable, the time fields remain usable. The browser then cuts the requested PCM samples and applies a fixed gain or peak normalization; only the modified WAV is saved. The source video is still read with WORKERFS, but **the complete decoded audio is temporarily held in memory**. This is why editing is limited to input audio with one or two channels, a known duration and a predicted temporary WAV size up to **128 MiB on smartphones** or **256 MiB on desktops**. Longer recordings may exceed these limits even when only a short segment is requested. Without edits, normal stream-copy and M4A/MP3/WAV conversion do not have this extra PCM-memory limit.
 
 Start/end accept seconds, `m:ss`, or `h:mm:ss` (optional milliseconds). Leaving End empty includes the remainder of the track. The requested range must be within the detected track duration. Fixed gains can clip loud peaks. Peak normalization scales the highest absolute sample toward -1 dBFS, but does not balance perceived loudness or eliminate background noise. The editing path always produces **WAV**; M4A/MP3 are unavailable while edits are selected. The temporary PCM data is not stored on a server or uploaded.
 
