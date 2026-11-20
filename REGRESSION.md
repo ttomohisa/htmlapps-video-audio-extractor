@@ -110,7 +110,7 @@ Manual release checks:
 
 - [ ] Review actual desktop and mobile screenshots for overly nested boxes, selected states, touch area and contrast.
 - [ ] Verify the readable/self-extract standalone HTML attachments after PR merge.
-- [ ] Verify release workflow creates the v1.0.5 tag and GitHub Release only after the PR is merged into main, and is idempotent when re-run.
+- [ ] Verify release workflow creates the v1.1.0 tag and GitHub Release only after the PR is merged into main, and is idempotent when re-run.
 
 
 ## v1.0.5 preview, localization and settings
